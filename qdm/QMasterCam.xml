@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<types xmlns="http://www.qeo.org/formal/2013/Qeo_Data_Model" version="0.1">
+    <module name="org::qeo::qeoblaster::qeomastercam">
+  	<struct name="MockCommand" behavior="event">
+            <doc>Master Cam control testing </doc>  
+    	  	<member name="from" type="string"> 
+    		    <doc>Who is sending the message?</doc>
+    		</member>
+    		<member name="cmd" type="string"> 
+    		    <doc>init, inc, dec</doc>
+    		</member>
+    		<member name="number" type="Int32"> 
+		    <doc>Number of People </doc>
+    		</member>
+        </struct>    
+    </module>
+</types> 
