@@ -22,7 +22,12 @@
 #include <qeo/api.h>
 
 #include "../irblasterpi/QIRBlaster.h"
+#include "../masterapp/QMasterCam.h"
 #include "QCamData.h"
+
+static int numPplInRoom = 4;
+static char * nameUser  = "KinectPI";
+static char * roomName  = "LivingRoom";
 
 /* ===[ Master App message listeners ]============================================= */
 //For Demo/Testing Purposes only :: camInfoApp subscribes to this topic only for testing/demo purposes
@@ -30,24 +35,14 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
                             const void *data,
                             uintptr_t userdata)
 {
-    org_qeo_qeoblaster_qeoir_IRCommand_t *msg = (org_qeo_qeoblaster_qeoir_IRCommand_t *)data;
-
+    org_qeo_qeoblaster_qeomastercam_MockCommand_t *msg = (org_qeo_qeoblaster_qeomastercam_MockCommand_t *)data;
     /* Whenever a new cmd arrives, print it to stdout and issue the comand to Mock */
-    if ( ) //Initial number of people
-    {
-        printf("%s : Initialize the state of the room to = %d people\n", msg->from, msg->number);
-	numPplInRoom = ; 
-    }
-    else if ( )
-    {
-	printf("Received a increase people cmd: ", msg->from, msg->cmd);
-        changeOfState
-    }
-    else
-    {
-        printf("Received a decrease people cmd: ", msg->from, msg->cmd);
-    }
-    //TODO : Call the IR Blaster Mockup here!
+    printf("Received from %s : Change people state to %d\n", msg->from, msg->number);
+    numPplInRoom = msg->number;
+    //TODO: Change the state of the system
+    //org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t //from, room - strings, num_people - int
+    //TODO: Issue a command to the irBlaster
+    //org_qeo_qeoblaster_qeoir_IRCommand_t  //from, cmd - strings
 }
 
 static qeo_event_reader_listener_t _listener = { .on_data = on_receive_cmd };
@@ -103,7 +98,6 @@ static char *default_user(void)
     return name;
 }
 
-static int numPplInRoom = 0;
 
 int main(int argc, const char **argv)
 {
@@ -116,42 +110,52 @@ int main(int argc, const char **argv)
     /* local variables for storing the message before sending */
     char buf[128];
     org_qeo_qeoblaster_qeoir_IRCommand_t cmd_msg;
-    org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t ppl_state;
-    chat_msg.cmd = buf;
+    cmd_msg.cmd = buf;
+
 
     /* initialize */
     qeo = qeo_factory_create();
     if (qeo != NULL){
-	//Wait for events and process it!
-        msg_writer = qeo_factory_create_event_writer(qeo, org_qeo_sample_simplechat_ChatMessage_type, NULL, 0);
-        msg_reader = qeo_factory_create_event_reader(qeo, org_qeo_qeoblaster_qeoir_IRCommand_type, &_listener, 0);
+	    
+	    ircmd_writer     = qeo_factory_create_event_writer(qeo, org_qeo_qeoblaster_qeoir_IRCommand_type, NULL, 0);
+	    pplstate_writer  = qeo_factory_create_state_writer(qeo, org_qeo_qeoblaster_qeokinect_PeoplePresenceState_type, NULL, 0);
+	    mastercmd_reader = qeo_factory_create_event_reader(qeo, org_qeo_qeoblaster_qeomastercam_MockCommand_type, &_listener, 0); 
 
-        /* set up some defaults */
-        chat_msg.from = default_user();
+	    //Initialize the system with some arbit value - say 5
+	    org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t initState; //from, room - strings, num_people - int
 
-        /* start conversing */
-        printf("IR Blaster is ready! Type '/help' for commands.\n");
-        printf("Waiting for commands on topic - \n");
-        while (!done) {
+	    initState.from = nameUser;
+	    initState.room = roomName;
+	    initState.num_people = numPplInRoom;
 
-            if(fgets(buf, sizeof(buf), stdin) != NULL) {
-                chomp(buf);
-                if ('/' == buf[0]) {
-                    handle_command(&buf[1], &chat_msg, &done);
-                }
-                else {
-		    //Nothing to write in IR Blaster
-                    //qeo_event_writer_write(msg_writer, &chat_msg);
-                }
-            }
+	    qeo_state_writer_write(pplstate_writer, &initState);  
 
-        }
+	    /* set up some defaults */
+	    cmd_msg.from = default_user();
 
-        /* clean up */
-        //free(chat_msg.from);
-        qeo_event_reader_close(msg_reader);
-        //qeo_event_writer_close(msg_writer);
-        qeo_factory_close(qeo);
+	    /* start conversing */
+	    printf("KinectPI is ready! Type '/help' for commands.\n");
+	    printf("Waiting for commands on topic - \n");
+	    while (!done) {
+
+		    if(fgets(buf, sizeof(buf), stdin) != NULL) {
+			    chomp(buf);
+			    if ('/' == buf[0]) {
+				    handle_command(&buf[1], &cmd_msg, &done);
+			    }
+			    else {
+				    //qeo_event_writer_write(msg_writer, &chat_msg);
+			    }
+		    }
+
+	    }
+
+	    /* clean up */
+	    //free(chat_msg.from);
+	    qeo_event_reader_close(mastercmd_reader);
+	    qeo_state_writer_close(pplstate_writer);
+	    qeo_event_writer_close(ircmd_writer);
+	    qeo_factory_close(qeo);
     }
     return 0;
 }
