@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <types xmlns="http://www.qeo.org/formal/2013/Qeo_Data_Model" version="0.1">
     <module name="org::qeo::qeoblaster::qeokinect">
-  	<struct name="PeoplePresenceState" behavior="event">
+  	<struct name="PeoplePresenceState" behavior="state">
             <doc>Notification of the change in number of people in the room</doc>  
     	  	<member name="from" type="string"> 
     		    <doc>Which device is sending the message.</doc>
