@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <types xmlns="http://www.qeo.org/formal/2013/Qeo_Data_Model" version="0.1">
-    <module name="org::qeo::sample::simplechat">
-  	<struct name="ChatMessage" behavior="event">
-            <doc>A simple chat message.</doc>  
+    <module name="org::qeo::qeoblaster::qeokinect">
+  	<struct name="PeoplePresenceState" behavior="event">
+            <doc>Notification of the change in number of people in the room</doc>  
     	  	<member name="from" type="string"> 
-    		    <doc>The user sending the message.</doc>
+    		    <doc>Which device is sending the message.</doc>
     		</member>
-    		<member name="message" type="string"> 
-    		    <doc>The message.</doc>
+		<member name="room" type="string">
+		    <doc>Which room the device is in</doc>
+		</member>
+    		<member name="num_people" type="int32"> 
+    		    <doc>Indicates how many people are present</doc>
     		</member>               
         </struct>    
     </module>
