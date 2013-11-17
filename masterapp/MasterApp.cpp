@@ -14,9 +14,16 @@ extern "C" {
 using namespace std;
 
 static qeo_state_change_reader_listener_t people_state_listener;
+static qeo_event_reader_listener_t ir_listener;
 
 static void on_people_state_change(const qeo_state_change_reader_t* reader, const void* data, uintptr_t userdata) {
-    cout << "got people state change" << endl;
+    org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t* state = (org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t*)data;
+    cout << "got people state change " << state->num_people << endl;
+}
+
+static void on_ir_event(const qeo_event_reader_t* reader, const void* data, uintptr_t userdata) {
+    org_qeo_qeoblaster_qeoir_IRCommand_t* evt = (org_qeo_qeoblaster_qeoir_IRCommand_t*)data;
+    cout << "got ir event " << evt->cmd << endl;
 }
 
 class QeoFactory {
@@ -35,36 +42,60 @@ class QeoFactory {
     qeo_factory_t* qeo_;
 };
 
-class MessageWriter {
+class PeopleWriter {
   public:
-    MessageWriter(QeoFactory* qeo_factory, const DDS_TypeSupport_meta* type) {
-	msg_writer_ = qeo_factory_create_event_writer(qeo_factory->GetFactory(), type, NULL, 0);
+    PeopleWriter(QeoFactory* qeo_factory) {
+	msg_writer_ = qeo_factory_create_event_writer(qeo_factory->GetFactory(), org_qeo_qeoblaster_qeomastercam_MockCommand_type, NULL, 0);
     }
-    ~MessageWriter() {
+    ~PeopleWriter() {
 	qeo_event_writer_close(msg_writer_);
+    }
+    void WriteNumPeople(int num_people) {
+	org_qeo_qeoblaster_qeomastercam_MockCommand_t event;
+	event.from = "master_app";
+	event.number = num_people;
+	qeo_event_writer_write(msg_writer_, &event);
     }
   private:
     qeo_event_writer_t* msg_writer_;
 };
 
-class StateReader {
+class PeopleStateReader {
   public:
-    StateReader(QeoFactory* qeo_factory, const DDS_TypeSupport_meta* type, qeo_state_change_reader_listener_t* listener) {
-	state_reader_ = qeo_factory_create_state_change_reader(qeo_factory->GetFactory(), type, listener, 0);
+    PeopleStateReader(QeoFactory* qeo_factory, qeo_state_change_reader_listener_t* listener) {
+	state_reader_ = qeo_factory_create_state_change_reader(qeo_factory->GetFactory(), org_qeo_qeoblaster_qeokinect_PeoplePresenceState_type, listener, 0);
     }
-    ~StateReader() {
+    ~PeopleStateReader() {
 	qeo_state_change_reader_close(state_reader_);
     }
   private:
     qeo_state_change_reader_t* state_reader_;
 };
 
-class MessageReader {
+ class IRWriter {
   public:
-    MessageReader(QeoFactory* qeo_factory, const DDS_TypeSupport_meta* type, qeo_event_reader_listener_t* listener) {
-	msg_reader_ = qeo_factory_create_event_reader(qeo_factory->GetFactory(), type, listener, 0);
+    IRWriter(QeoFactory* qeo_factory) {
+	msg_writer_ = qeo_factory_create_event_writer(qeo_factory->GetFactory(), org_qeo_qeoblaster_qeoir_IRCommand_type, NULL, 0);
     }
-    ~MessageReader() {
+    ~IRWriter() {
+	qeo_event_writer_close(msg_writer_);
+    }
+    void WritePause() {
+	org_qeo_qeoblaster_qeoir_IRCommand_t msg;
+	msg.from = "master_app";
+	msg.cmd = "pause_play";
+	qeo_event_writer_write(msg_writer_, &msg);
+    }
+  private:
+    qeo_event_writer_t* msg_writer_;
+};
+
+class IRReader {
+  public:
+    IRReader(QeoFactory* qeo_factory, qeo_event_reader_listener_t* listener) {
+	msg_reader_ = qeo_factory_create_event_reader(qeo_factory->GetFactory(), org_qeo_qeoblaster_qeoir_IRCommand_type, listener, 0);
+    }
+    ~IRReader() {
 	qeo_event_reader_close(msg_reader_);
     }
   private:
@@ -79,41 +110,41 @@ int main(int argc, const char **argv)
 
     people_state_listener.on_data = on_people_state_change;
     people_state_listener.on_remove = NULL;
-
-    MessageWriter ir_writer(&factory, org_qeo_qeoblaster_qeoir_IRCommand_type);
-    MessageWriter people_writer(&factory, org_qeo_qeoblaster_qeomastercam_MockCommand_type);
-    StateReader people_reader(&factory, org_qeo_qeoblaster_qeokinect_PeoplePresenceState_type, &people_state_listener);
-    int done = 0;
-
-    /* local variables for storing the message before sending */
-    //char buf[128];
-    //org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t people_state = { .cmd = buf };
-    //org_qeo_qeoblaster_qeoir_IRCommand_type ir_blast = { .cmd = buf };
+    ir_listener.on_data = on_ir_event;
 
     factory.Initialize();
+    PeopleWriter people_writer(&factory);
+    IRWriter ir_writer(&factory);
+    IRReader ir_reader(&factory, &ir_listener);
+    PeopleStateReader people_reader(&factory, &people_state_listener);
+
     cout << "Initialized Qeo Factory" << endl;
-    string cmd;
-    while (!done) {
+    int cmd;
+    while(true) {
 	cout << "----===== MENU =====----" << endl;
 	cout << "1. Set Number of People" << endl;
 	cout << "2. Send IR Blast" << endl;
 	cout << "3. Exit" << endl;
 	cout << "Enter a command: ";
 	cin >> cmd;
-	stringstream ss(cmd);
-	int iCmd;
-	ss << iCmd;
-	cout << "Got command " << iCmd << endl;
-
-            //if(fgets(buf, sizeof(buf), stdin) != NULL) {
-                //chomp(buf);
-                //if ('/' == buf[0]) {
-                    //handle_command(&buf[1], &chat_msg, &done);
-                //}
-                //else {
-                    //qeo_event_writer_write(msg_writer, &chat_msg);
-                //}
-            //}
+	
+	cout << "Got command " << cmd << endl;
+	if(cmd == 1) {
+	    int num;
+	    cout << "Enter number of people to set: ";
+	    cin >> num;
+	    people_writer.WriteNumPeople(num);
+	    cout << "Sent num people " << num << endl;
+	} else if(cmd == 2) {
+	    ir_writer.WritePause();
+	    cout << "Sent Pause to IR Blaster" << endl;
+	} else if(cmd == 3) {
+	    cout << "Bye Bye!" << endl;
+	    return 0;
+	} else {
+	    cout << "Unrecognized Command" << endl;
+	}
+	cout << endl;
     }
     return 0;
 }
