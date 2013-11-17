@@ -6,10 +6,7 @@
     	  	<member name="from" type="string"> 
     		    <doc>Who is sending the message?</doc>
     		</member>
-    		<member name="cmd" type="string"> 
-    		    <doc>init, inc, dec</doc>
-    		</member>
-    		<member name="number" type="Int32"> 
+    		<member name="number" type="int32"> 
 		    <doc>Number of People </doc>
     		</member>
         </struct>    

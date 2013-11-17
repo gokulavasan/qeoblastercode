@@ -21,10 +21,11 @@
 
 #include <qeo/api.h>
 
-#include "QIRBlaster.h"
+#include "../irblasterpi/QIRBlaster.h"
+#include "QCamData.h"
 
-/* ===[ Cmd message listeners ]============================================= */
-
+/* ===[ Master App message listeners ]============================================= */
+//For Demo/Testing Purposes only :: camInfoApp subscribes to this topic only for testing/demo purposes
 static void on_receive_cmd (const qeo_event_reader_t *reader,
                             const void *data,
                             uintptr_t userdata)
@@ -32,7 +33,20 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
     org_qeo_qeoblaster_qeoir_IRCommand_t *msg = (org_qeo_qeoblaster_qeoir_IRCommand_t *)data;
 
     /* Whenever a new cmd arrives, print it to stdout and issue the comand to Mock */
-    printf("Issuer = %s :: Command = %s\n", msg->from, msg->cmd);
+    if ( ) //Initial number of people
+    {
+        printf("%s : Initialize the state of the room to = %d people\n", msg->from, msg->number);
+	numPplInRoom = ; 
+    }
+    else if ( )
+    {
+	printf("Received a increase people cmd: ", msg->from, msg->cmd);
+        changeOfState
+    }
+    else
+    {
+        printf("Received a decrease people cmd: ", msg->from, msg->cmd);
+    }
     //TODO : Call the IR Blaster Mockup here!
 }
 
@@ -89,23 +103,27 @@ static char *default_user(void)
     return name;
 }
 
+static int numPplInRoom = 0;
+
 int main(int argc, const char **argv)
 {
     qeo_factory_t *qeo;
-    //qeo_event_writer_t *msg_writer; //IR Blaster is not publishing data
-    qeo_event_reader_t *msg_reader;
+    qeo_event_writer_t *ircmd_writer; //Publish cmds to IR
+    qeo_state_writer_t *pplstate_writer; //Publish the state to the world
+    qeo_event_reader_t *mastercmd_reader; //Read cmds from MasterApp
     int done = 0;
 
     /* local variables for storing the message before sending */
     char buf[128];
-    org_qeo_qeoblaster_qeoir_IRCommand_t chat_msg;
+    org_qeo_qeoblaster_qeoir_IRCommand_t cmd_msg;
+    org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t ppl_state;
     chat_msg.cmd = buf;
 
     /* initialize */
     qeo = qeo_factory_create();
     if (qeo != NULL){
 	//Wait for events and process it!
-        //msg_writer = qeo_factory_create_event_writer(qeo, org_qeo_sample_simplechat_ChatMessage_type, NULL, 0);
+        msg_writer = qeo_factory_create_event_writer(qeo, org_qeo_sample_simplechat_ChatMessage_type, NULL, 0);
         msg_reader = qeo_factory_create_event_reader(qeo, org_qeo_qeoblaster_qeoir_IRCommand_type, &_listener, 0);
 
         /* set up some defaults */
