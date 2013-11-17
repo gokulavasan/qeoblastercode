@@ -9,3 +9,4 @@ irblasterpi/*.o
 masterapp/*.o
 caminfopi/camInfoBlaster
 irblasterpi/qeoirblaster
+masterapp/master-app
