@@ -2,7 +2,10 @@
 <types xmlns="http://www.qeo.org/formal/2013/Qeo_Data_Model" version="0.1">
     <module name="org::qeo::qeoblaster::qeokinect">
   	<struct name="PeoplePresenceState" behavior="state">
-            <doc>Notification of the change in number of people in the room</doc>  
+            <doc>Notification of the change in number of people in the room</doc>
+                <member name="id" type="int32" key="true">
+                    <doc>Identifies which the KinectPI</doc>
+                </member>  
     	  	<member name="from" type="string"> 
     		    <doc>Which device is sending the message.</doc>
     		</member>

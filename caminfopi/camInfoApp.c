@@ -25,9 +25,15 @@
 #include "../masterapp/QMasterCam.h"
 #include "QCamData.h"
 
+static int kinectId = 0;
 static int numPplInRoom = 4;
 static char * nameUser  = "KinectPI";
 static char * roomName  = "LivingRoom";
+static char * irCommand = "PAUSE";
+
+static qeo_event_writer_t *ircmd_writer; //Publish cmds to IR
+static qeo_state_writer_t *pplstate_writer; //Publish the state to the world
+static qeo_event_reader_t *mastercmd_reader; //Read cmds from MasterApp
 
 /* ===[ Master App message listeners ]============================================= */
 //For Demo/Testing Purposes only :: camInfoApp subscribes to this topic only for testing/demo purposes
@@ -39,10 +45,18 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
     /* Whenever a new cmd arrives, print it to stdout and issue the comand to Mock */
     printf("Received from %s : Change people state to %d\n", msg->from, msg->number);
     numPplInRoom = msg->number;
-    //TODO: Change the state of the system
-    //org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t //from, room - strings, num_people - int
-    //TODO: Issue a command to the irBlaster
-    //org_qeo_qeoblaster_qeoir_IRCommand_t  //from, cmd - strings
+    org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t changeState; //from, room - strings, num_people - int
+    changeState.id = kinectId;
+    changeState.from = nameUser;
+    changeState.room = roomName;
+    changeState.num_people = numPplInRoom;
+    qeo_state_writer_write(pplstate_writer, &changeState); 
+    //Do some intelligent decision here about max people seen so far and depending upon the current state and the max state seen
+    //decide to send the command to irBlaster 
+    org_qeo_qeoblaster_qeoir_IRCommand_t irCmd; //from, cmd - strings
+    irCmd.from = nameUser;
+    irCmd.cmd  = irCommand;
+    qeo_event_writer_write(ircmd_writer, &irCmd);
 }
 
 static qeo_event_reader_listener_t _listener = { .on_data = on_receive_cmd };
@@ -102,9 +116,6 @@ static char *default_user(void)
 int main(int argc, const char **argv)
 {
     qeo_factory_t *qeo;
-    qeo_event_writer_t *ircmd_writer; //Publish cmds to IR
-    qeo_state_writer_t *pplstate_writer; //Publish the state to the world
-    qeo_event_reader_t *mastercmd_reader; //Read cmds from MasterApp
     int done = 0;
 
     /* local variables for storing the message before sending */
@@ -121,9 +132,10 @@ int main(int argc, const char **argv)
 	    pplstate_writer  = qeo_factory_create_state_writer(qeo, org_qeo_qeoblaster_qeokinect_PeoplePresenceState_type, NULL, 0);
 	    mastercmd_reader = qeo_factory_create_event_reader(qeo, org_qeo_qeoblaster_qeomastercam_MockCommand_type, &_listener, 0); 
 
-	    //Initialize the system with some arbit value - say 5
+	    //Initialize the system with some arbit value
 	    org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t initState; //from, room - strings, num_people - int
-
+            
+            initState.id = kinectId;
 	    initState.from = nameUser;
 	    initState.room = roomName;
 	    initState.num_people = numPplInRoom;
