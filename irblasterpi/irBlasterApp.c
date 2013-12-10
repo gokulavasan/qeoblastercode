@@ -24,6 +24,8 @@
 #include "QIRBlaster.h"
 
 /* ===[ Cmd message listeners ]============================================= */
+int pause_play = 0;
+char pp[] = "pause_play";
 
 static void on_receive_cmd (const qeo_event_reader_t *reader,
                             const void *data,
@@ -34,7 +36,15 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
     /* Whenever a new cmd arrives, print it to stdout and issue the comand to Mock */
     printf("Issuer = %s :: Command = %s\n", msg->from, msg->cmd);
     //TODO : Call the IR Blaster Mockup here!
-}
+    if (strcmp(msg->cmd, pp) == 0)
+    {
+        if (pause_play) //Play Command
+            system ("irsend SEND_ONCE sony KEY_PLAY");
+        else 
+            system ("irsend SEND_ONCE sony KEY_PAUSE");
+        pause_play ^= 1;
+    }
+}	
 
 static qeo_event_reader_listener_t _listener = { .on_data = on_receive_cmd };
 
