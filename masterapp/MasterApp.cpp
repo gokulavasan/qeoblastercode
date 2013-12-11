@@ -89,7 +89,7 @@ class PeopleStateReader {
     void WritePause() {
 	org_qeo_qeoblaster_qeoir_IRCommand_t msg;
 	msg.from = "master_app";
-	msg.cmd = "pause_play";
+	msg.cmd = "PAUSE";
 	qeo_event_writer_write(msg_writer_, &msg);
     }
   private:
