@@ -20,11 +20,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
 #include <qeo/api.h>
 
 #include "../irblasterpi/QIRBlaster.h"
 #include "../masterapp/QMasterCam.h"
+#include "../masterapp/RemoteCmd.h"
 #include "QCamData.h"
 
 static int kinectId = 0;
@@ -44,7 +44,7 @@ void start_server();
 // This function is called when a system call fails. It displays a message about the error on stderr and then aborts the program
 void error(char *msg);
 
-static void sendCmd()
+static void sendCmd(remoteCmd rCmd)
 {
 	org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t changeState; //from, room - strings, num_people - int
 	changeState.id = kinectId;
@@ -56,7 +56,7 @@ static void sendCmd()
 	//decide to send the command to irBlaster 
 	org_qeo_qeoblaster_qeoir_IRCommand_t irCmd; //from, cmd - strings
 	irCmd.from = nameUser;
-	irCmd.cmd  = irCommand;
+	irCmd.cmd  = remoteCmdNames[rCmd];
 	qeo_event_writer_write(ircmd_writer, &irCmd);
 }
 
@@ -73,7 +73,7 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
 	{
                 printf("Decrease in Pop :: Sending Cmd : Before %d Now %d Max %d\n", numPplInRoom, msg->number, maxNumPpl);
 		numPplInRoom = msg->number; //Update number of ppl in room
-                sendCmd();
+                sendCmd(REMOTE_LAST_CMD);
 	}
         else if (msg->number > numPplInRoom)
         {
@@ -86,7 +86,7 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
 		{
                         printf("Increase in Pop:: Sending Cmd : Before %d Now %d Max %d\n", numPplInRoom, msg->number, maxNumPpl);
 			numPplInRoom = msg->number;
-			sendCmd();
+			sendCmd(REMOTE_LAST_CMD);
 		}
 	}
 }
@@ -243,6 +243,21 @@ void start_server(int port)
 		n = read(newsockfd,buffer,255);
 		if (n < 0) error("ERROR reading from socket");
 		printf("Here is the message: %s\n",buffer);
+		if (0 == strcmp(buffer, remoteCmdNames[REMOTE_PLAY])) 
+			sendCmd(REMOTE_PLAY);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_PAUSE]))
+			sendCmd(REMOTE_PAUSE);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_PREV]))
+			sendCmd(REMOTE_PREV);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_NEXT]))
+			sendCmd(REMOTE_NEXT);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_POWER]))
+			sendCmd(REMOTE_POWER);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_STOP]))
+			sendCmd(REMOTE_STOP);
+		else
+			printf("Unrecognized Command : %s\n", buffer);
+            
 	}
 }
 
