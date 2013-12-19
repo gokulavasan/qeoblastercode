@@ -1,8 +1,6 @@
 #ifndef CONFIG_STRUCTS_H
 #define CONFIG_STRUCTS_H
 
-#include <string>
-
 enum value_type_t
 {
 	STRING,
@@ -12,7 +10,7 @@ enum value_type_t
 
 union value_t
 {
-	std::string str_value;
+	char str_value[256];
 	int int_value;
 	double double_value;
 };
@@ -28,7 +26,7 @@ struct config_struct_t
 {
 	int cause_device_id; // id of device that triggers the event
 	bool cause_state_event; // true if we are looking for a state event
-	std::string cause_name; // if a state event, then it's the state name, otherwise it's the signal name
+	char cause_name[256]; // if a state event, then it's the state name, otherwise it's the signal name
 	
 	//**** following is used for state changes only *****************************
 	compare_type_t compare_type; // what kind of comparison are we comparing the state value to?
@@ -38,7 +36,7 @@ struct config_struct_t
 
 	int effect_device_id;
 	bool effect_state_change; // true if the event causes a state change, otherwise it causes a signal
-	std::string effect_name; // if a state change effect, name of the state, otherwise name of the signal
+	char effect_name[256]; // if a state change effect, name of the state, otherwise name of the signal
 
 	//****** following is for effects that change state only ******************
 	value_type_t effect_value_type; // what data type is the effect state change?
