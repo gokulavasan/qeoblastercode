@@ -22,7 +22,7 @@ enum compare_type_t
 	GREATER
 };
 
-struct config_struct_t
+struct config_t
 {
 	int cause_device_id; // id of device that triggers the event
 	bool cause_state_event; // true if we are looking for a state event
