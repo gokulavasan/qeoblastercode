@@ -10,12 +10,15 @@ const int MAX_POINTS = 40;
 int ignore_frames = 0;
 using namespace std;
 
+//#define ONLY_PLAY_PAUSE
+
 CSkeletonTracker::CSkeletonTracker() :        
     m_pSkeletonStreamHandle(INVALID_HANDLE_VALUE),
     m_bSeatedMode(false),
 	m_pNuiSensor(nullptr),
 	m_hNextFrameEvent(INVALID_HANDLE_VALUE),
-	lastGesture(nullptr)
+	lastGesture(nullptr),
+	last_left(false)
 {    
 	ZeroMemory(m_Points,sizeof(m_Points));
 }
@@ -67,6 +70,7 @@ void CSkeletonTracker::Initialize(CSkeletonRenderer& renderer, Direct2DContext* 
 	left_gesture_detector.Initialize(d2d_context);
 	right_gesture_detector.Initialize(d2d_context);
 
+#ifdef CONNECT_SERVER
 	WSADATA wsaData;    
     struct addrinfo *result = NULL,
                     *ptr = NULL,
@@ -122,6 +126,7 @@ void CSkeletonTracker::Initialize(CSkeletonRenderer& renderer, Direct2DContext* 
         WSACleanup();
         AfxMessageBox(L"Unable to connect to server!");
     }    
+#endif
 }
 
 void CSkeletonTracker::ToggleSeated()
@@ -147,7 +152,7 @@ void CSkeletonTracker::ProcessSkeleton(CSkeletonRenderer& renderer)
     // smooth out the skeleton data
     m_pNuiSensor->NuiTransformSmooth(&skeletonFrame, NULL);
 
-	renderer.Render(skeletonFrame, m_Points, left_hand_track, right_hand_track, (ignore_frames > 0) ? lastGesture : NULL);    
+	int inferred_bones = renderer.Render(skeletonFrame, m_Points, left_hand_track, right_hand_track, (ignore_frames > 0) ? lastGesture : NULL, last_left);    	
 
 	if(ignore_frames > 0)
 	{
@@ -171,17 +176,22 @@ void CSkeletonTracker::ProcessSkeleton(CSkeletonRenderer& renderer)
 		if (skel.eSkeletonPositionTrackingState[i] == NUI_SKELETON_POSITION_NOT_TRACKED)
 			return;    
 	}*/
-	Gesture* left_gesture = left_gesture_detector.DetectGesture(left_hand_track);
-	if(left_gesture == NULL)
+	if(inferred_bones == 0)
 	{
-		Gesture* right_gesture = right_gesture_detector.GestureDetector::DetectGesture(right_hand_track);
-		HandleGesture(false, right_gesture, renderer);
-		lastGesture = right_gesture;
-	}
-	else
-	{
-		HandleGesture(true, left_gesture, renderer);		
-		lastGesture = left_gesture;
+		Gesture* left_gesture = left_gesture_detector.DetectGesture(left_hand_track);
+		if(left_gesture == NULL)
+		{
+			Gesture* right_gesture = right_gesture_detector.GestureDetector::DetectGesture(right_hand_track);
+			HandleGesture(false, right_gesture, renderer);
+			lastGesture = right_gesture;
+			last_left = false;
+		}
+		else
+		{
+			HandleGesture(true, left_gesture, renderer);		
+			lastGesture = left_gesture;	
+			last_left = true;
+		}
 	}
 }
 
@@ -189,13 +199,19 @@ void CSkeletonTracker::HandleGesture(bool isLeft, Gesture* gesture, CSkeletonRen
 {
 	if(gesture != NULL)
 	{
-		string sendbuf = gesture->GetCommand();
-		if(sendbuf != "PLAY")
-			return;
-		if(isLeft && sendbuf == "PLAY")
+		string sendbuf;
+		if(isLeft)
 		{
-			sendbuf = "PAUSE";
+			sendbuf = gesture->GetCommandLeft();
 		}
+		else
+		{
+			sendbuf = gesture->GetCommandRight();
+		}
+#ifdef ONLY_PLAY_PAUSE
+		if(sendbuf != "PLAY" && sendbuf != "PAUSE")
+			return;
+#endif		
 		wstringstream out;
 		out << "Got Gesture: " << wstring(sendbuf.begin(), sendbuf.end()) << endl;
 		wstring msg = out.str();
@@ -204,6 +220,7 @@ void CSkeletonTracker::HandleGesture(bool isLeft, Gesture* gesture, CSkeletonRen
 		right_hand_track.clear();
 		ignore_frames = 50;
 
+#ifdef CONNECT_SERVER
 		int iResult;
 		// Send an initial buffer
 		iResult = send( ConnectSocket, sendbuf.c_str(), sendbuf.length(), 0 );
@@ -215,6 +232,7 @@ void CSkeletonTracker::HandleGesture(bool isLeft, Gesture* gesture, CSkeletonRen
 		}
 
 		printf("Bytes Sent: %ld\n", iResult);
+#endif
 	}
 }
 

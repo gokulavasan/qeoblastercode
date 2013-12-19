@@ -23,9 +23,10 @@ bool Gesture::hit_test(int x, int y)
 	return bits[x + y * 100];
 }
 
-void Gesture::load(string my_command, int my_id, int resource_id)
+void Gesture::load(string my_command_left, string my_command_right, int my_id, int resource_id)
 {
-	command = my_command;
+	command_left = my_command_left;
+	command_right = my_command_right;
 	id = my_id;
 	ZeroMemory(&(bits[0]), 100 * 100);		
 	bitmap.LoadFromResource(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id));

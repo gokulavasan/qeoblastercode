@@ -6,7 +6,7 @@
 class GestureDetector
 {
 public:
-	GestureDetector(void);
+	GestureDetector();
 	~GestureDetector();	
 	void Initialize(Direct2DContext* context);
 	Gesture* DetectGesture(std::deque<D2D1_POINT_2F> points);

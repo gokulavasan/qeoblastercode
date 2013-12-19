@@ -29,4 +29,5 @@ private:
     HANDLE m_pSkeletonStreamHandle;  
 	INuiSensor* m_pNuiSensor;
 	Gesture* lastGesture;
+	bool last_left;
 };

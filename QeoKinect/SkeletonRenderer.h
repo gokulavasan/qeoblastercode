@@ -11,8 +11,8 @@ public:
 	CSkeletonRenderer(void);
 	~CSkeletonRenderer(void);
 	void Initialize(HWND hWnd, Direct2DContext* d2d_context);
-	void Render(NUI_SKELETON_FRAME& skeletonFrame, D2D1_POINT_2F points[], std::deque<D2D1_POINT_2F>& left_hand_track, std::deque<D2D1_POINT_2F>& right_hand_track,
-		Gesture* last_gesture);
+	int Render(NUI_SKELETON_FRAME& skeletonFrame, D2D1_POINT_2F points[], std::deque<D2D1_POINT_2F>& left_hand_track, std::deque<D2D1_POINT_2F>& right_hand_track,
+		Gesture* last_gesture, bool last_left);
 
 	void SetStatusMessage(WCHAR* szMessage);
 private:	
@@ -25,8 +25,8 @@ private:
 	// Direct2D    
 	HRESULT CreateDeviceIndependentResources();
 	void DrawHandTracking(std::deque<D2D1_POINT_2F>& left_hand_track, std::deque<D2D1_POINT_2F>& right_hand_track);
-    void DrawBone(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], NUI_SKELETON_POSITION_INDEX bone0, NUI_SKELETON_POSITION_INDEX bone1);    
-    void DrawSkeleton(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], int windowWidth, int windowHeight);
+    int DrawBone(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], NUI_SKELETON_POSITION_INDEX bone0, NUI_SKELETON_POSITION_INDEX bone1);    
+    int DrawSkeleton(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], int windowWidth, int windowHeight);
     D2D1_POINT_2F SkeletonToScreen(Vector4 skeletonPoint, int width, int height);
 	HRESULT EnsureDirect2DResources( );
     void DiscardDirect2DResources( );  

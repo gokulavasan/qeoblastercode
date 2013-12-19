@@ -31,14 +31,15 @@ CSkeletonRenderer::~CSkeletonRenderer(void)
     DiscardDirect2DResources();
 }
 
-void CSkeletonRenderer::Render(NUI_SKELETON_FRAME& skeletonFrame, D2D1_POINT_2F points[], std::deque<D2D1_POINT_2F>& left_hand_track, std::deque<D2D1_POINT_2F>& right_hand_track,
-	Gesture* last_gesture)
+int CSkeletonRenderer::Render(NUI_SKELETON_FRAME& skeletonFrame, D2D1_POINT_2F points[], std::deque<D2D1_POINT_2F>& left_hand_track, std::deque<D2D1_POINT_2F>& right_hand_track,
+	Gesture* last_gesture, bool last_left)
 {
 	// Endure Direct2D is ready to draw
     HRESULT hr = EnsureDirect2DResources();
     if(FAILED(hr))    
-        return;    
+        return 0;    
 
+	int inferred_bones = 0;
     m_pRenderTarget->BeginDraw();
     m_pRenderTarget->Clear();
 
@@ -53,7 +54,7 @@ void CSkeletonRenderer::Render(NUI_SKELETON_FRAME& skeletonFrame, D2D1_POINT_2F 
 
         if (NUI_SKELETON_TRACKED == trackingState)        
             // We're tracking the skeleton, draw it
-            DrawSkeleton(skeletonFrame.SkeletonData[i], points, width, height);        
+            inferred_bones += DrawSkeleton(skeletonFrame.SkeletonData[i], points, width, height);        
         else if (NUI_SKELETON_POSITION_ONLY == trackingState)
         {
             // we've only received the center point of the skeleton, draw that
@@ -70,7 +71,15 @@ void CSkeletonRenderer::Render(NUI_SKELETON_FRAME& skeletonFrame, D2D1_POINT_2F 
 
 	if(last_gesture != NULL) 
 	{
-		string sendbuf = last_gesture->GetCommand();
+		string sendbuf;
+		if(last_left)
+		{
+			sendbuf = last_gesture->GetCommandLeft();
+		}
+		else
+		{
+			sendbuf = last_gesture->GetCommandRight();
+		}
 		wstringstream out;
 		out << "Got Gesture: " << wstring(sendbuf.begin(), sendbuf.end()) << endl;
 		wstring msg = out.str();
@@ -108,41 +117,42 @@ void CSkeletonRenderer::DrawHandTracking(std::deque<D2D1_POINT_2F>& left_hand_tr
 	}
 }
 
-void CSkeletonRenderer::DrawSkeleton(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], int windowWidth, int windowHeight)
+int CSkeletonRenderer::DrawSkeleton(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], int windowWidth, int windowHeight)
 {      
     int i;
 
     for (i = 0; i < NUI_SKELETON_POSITION_COUNT; ++i)    
         points[i] = SkeletonToScreen(skel.SkeletonPositions[i], windowWidth, windowHeight);    
 
+	int inferred_bones = 0;
     // Render Torso
-    DrawBone(skel, points, NUI_SKELETON_POSITION_HEAD, NUI_SKELETON_POSITION_SHOULDER_CENTER);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_CENTER, NUI_SKELETON_POSITION_SHOULDER_LEFT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_CENTER, NUI_SKELETON_POSITION_SHOULDER_RIGHT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_CENTER, NUI_SKELETON_POSITION_SPINE);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_SPINE, NUI_SKELETON_POSITION_HIP_CENTER);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_CENTER, NUI_SKELETON_POSITION_HIP_LEFT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_CENTER, NUI_SKELETON_POSITION_HIP_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_HEAD, NUI_SKELETON_POSITION_SHOULDER_CENTER);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_CENTER, NUI_SKELETON_POSITION_SHOULDER_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_CENTER, NUI_SKELETON_POSITION_SHOULDER_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_CENTER, NUI_SKELETON_POSITION_SPINE);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_SPINE, NUI_SKELETON_POSITION_HIP_CENTER);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_CENTER, NUI_SKELETON_POSITION_HIP_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_CENTER, NUI_SKELETON_POSITION_HIP_RIGHT);
 
     // Left Arm
-    DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_LEFT, NUI_SKELETON_POSITION_ELBOW_LEFT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_ELBOW_LEFT, NUI_SKELETON_POSITION_WRIST_LEFT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_WRIST_LEFT, NUI_SKELETON_POSITION_HAND_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_LEFT, NUI_SKELETON_POSITION_ELBOW_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_ELBOW_LEFT, NUI_SKELETON_POSITION_WRIST_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_WRIST_LEFT, NUI_SKELETON_POSITION_HAND_LEFT);
 
     // Right Arm
-    DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_RIGHT, NUI_SKELETON_POSITION_ELBOW_RIGHT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_ELBOW_RIGHT, NUI_SKELETON_POSITION_WRIST_RIGHT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_WRIST_RIGHT, NUI_SKELETON_POSITION_HAND_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_SHOULDER_RIGHT, NUI_SKELETON_POSITION_ELBOW_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_ELBOW_RIGHT, NUI_SKELETON_POSITION_WRIST_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_WRIST_RIGHT, NUI_SKELETON_POSITION_HAND_RIGHT);
 
     // Left Leg
-    DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_LEFT, NUI_SKELETON_POSITION_KNEE_LEFT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_KNEE_LEFT, NUI_SKELETON_POSITION_ANKLE_LEFT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_ANKLE_LEFT, NUI_SKELETON_POSITION_FOOT_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_LEFT, NUI_SKELETON_POSITION_KNEE_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_KNEE_LEFT, NUI_SKELETON_POSITION_ANKLE_LEFT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_ANKLE_LEFT, NUI_SKELETON_POSITION_FOOT_LEFT);
 
     // Right Leg
-    DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_RIGHT, NUI_SKELETON_POSITION_KNEE_RIGHT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_KNEE_RIGHT, NUI_SKELETON_POSITION_ANKLE_RIGHT);
-    DrawBone(skel, points, NUI_SKELETON_POSITION_ANKLE_RIGHT, NUI_SKELETON_POSITION_FOOT_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_HIP_RIGHT, NUI_SKELETON_POSITION_KNEE_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_KNEE_RIGHT, NUI_SKELETON_POSITION_ANKLE_RIGHT);
+    inferred_bones += DrawBone(skel, points, NUI_SKELETON_POSITION_ANKLE_RIGHT, NUI_SKELETON_POSITION_FOOT_RIGHT);
 
     // Draw the joints in a different color
     for (i = 0; i < NUI_SKELETON_POSITION_COUNT; ++i)
@@ -154,26 +164,31 @@ void CSkeletonRenderer::DrawSkeleton(const NUI_SKELETON_DATA & skel, D2D1_POINT_
         else if ( skel.eSkeletonPositionTrackingState[i] == NUI_SKELETON_POSITION_TRACKED )        
             m_pRenderTarget->DrawEllipse(ellipse, m_pBrushJointTracked);        
     }
+	return inferred_bones;
 }
 
-void CSkeletonRenderer::DrawBone(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], NUI_SKELETON_POSITION_INDEX joint0, NUI_SKELETON_POSITION_INDEX joint1)
+int CSkeletonRenderer::DrawBone(const NUI_SKELETON_DATA & skel, D2D1_POINT_2F points[], NUI_SKELETON_POSITION_INDEX joint0, NUI_SKELETON_POSITION_INDEX joint1)
 {
     NUI_SKELETON_POSITION_TRACKING_STATE joint0State = skel.eSkeletonPositionTrackingState[joint0];
     NUI_SKELETON_POSITION_TRACKING_STATE joint1State = skel.eSkeletonPositionTrackingState[joint1];
 
     // If we can't find either of these joints, exit
     if (joint0State == NUI_SKELETON_POSITION_NOT_TRACKED || joint1State == NUI_SKELETON_POSITION_NOT_TRACKED)    
-        return;    
+        return 0; 
 
     // Don't draw if both points are inferred
     if (joint0State == NUI_SKELETON_POSITION_INFERRED && joint1State == NUI_SKELETON_POSITION_INFERRED)    
-        return;    
+        return 0;    
 
     // We assume all drawn bones are inferred unless BOTH joints are tracked
     if (joint0State == NUI_SKELETON_POSITION_TRACKED && joint1State == NUI_SKELETON_POSITION_TRACKED)    
         m_pRenderTarget->DrawLine(points[joint0], points[joint1], m_pBrushBoneTracked, g_TrackedBoneThickness);    
     else    
+	{
         m_pRenderTarget->DrawLine(points[joint0], points[joint1], m_pBrushBoneInferred, g_InferredBoneThickness);    
+		return 1;
+	}
+	return 0;
 }
 
 D2D1_POINT_2F CSkeletonRenderer::SkeletonToScreen(Vector4 skeletonPoint, int width, int height)
@@ -236,7 +251,7 @@ HRESULT CSkeletonRenderer::EnsureDirect2DResources()
 HRESULT CSkeletonRenderer::CreateDeviceIndependentResources()
 {
     static const WCHAR msc_fontName[] = L"Verdana";
-    static const FLOAT msc_fontSize = 12;
+    static const FLOAT msc_fontSize = 25;
     HRESULT hr;
         
     // Create a DirectWrite factory.

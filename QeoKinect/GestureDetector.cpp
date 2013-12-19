@@ -19,6 +19,8 @@ Gesture reverseGesture;
 Gesture powerGesture;
 Gesture stopGesture;
 
+#define MIN_BOUNDS 250
+
 GestureDetector::GestureDetector() :
 	m_pRenderTarget(nullptr),
 	m_pCircleBrush(nullptr),
@@ -72,8 +74,22 @@ Gesture* GestureDetector::DetectGesture(std::deque<D2D1_POINT_2F> points)
 	}
 	int bounds_width = bounds_right - bounds_left + bounds_offset * 2;
 	int bounds_height = bounds_bottom - bounds_top + bounds_offset * 2;
+	
+	if(bounds_width < bounds_height)
+	{
+		int old_width = bounds_width;
+		bounds_width = bounds_height;
+		bounds_left = (bounds_left + old_width / 2) - bounds_width / 2;
+	} 
+	else if(bounds_height < bounds_width)
+	{
+		int old_height = bounds_height;
+		bounds_height = bounds_width;
+		bounds_top = (bounds_top + old_height / 2) - bounds_height / 2;
+	}
 
-	if(bounds_width < 150 || bounds_height < 150)
+
+	if(bounds_width < MIN_BOUNDS || bounds_height < MIN_BOUNDS)
 	{
 		return NULL;
 	}
@@ -276,19 +292,19 @@ void GestureDetector::loadBitmaps(ID2D1HwndRenderTarget* pRenderTarget)
 {	
 	if(!images_loaded)
 	{			
-		circleGesture.load("PLAY", CIRCLE_GESTURE, IDB_CIRCLE);
-		gestures.push_back(&circleGesture);		
+		circleGesture.load("PLAY", "PAUSE", CIRCLE_GESTURE, IDB_CIRCLE);
+		gestures.push_back(&circleGesture);				
 
-		forwardGesture.load("NEXT", FORWARD_GESTURE, IDB_FORWARD);
+		forwardGesture.load("NEXT", "NEXT", FORWARD_GESTURE, IDB_FORWARD);
 		gestures.push_back(&forwardGesture);		
 
-		reverseGesture.load("PREV", REVERSE_GESTURE, IDB_REVERSE);
+		reverseGesture.load("PREV", "PREV", REVERSE_GESTURE, IDB_REVERSE);
 		gestures.push_back(&reverseGesture);		
 
-		powerGesture.load("POWER", POWER_GESTURE, IDB_POWER);
+		powerGesture.load("POWER", "POWER", POWER_GESTURE, IDB_POWER);
 		gestures.push_back(&powerGesture);		
 
-		stopGesture.load("STOP", STOP_GESTURE, IDB_STOP);
+		stopGesture.load("STOP", "STOP", STOP_GESTURE, IDB_STOP);
 		gestures.push_back(&stopGesture);		
 
 		images_loaded = true;
