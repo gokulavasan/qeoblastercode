@@ -18,11 +18,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
-
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <qeo/api.h>
 
 #include "../irblasterpi/QIRBlaster.h"
 #include "../masterapp/QMasterCam.h"
+#include "../masterapp/RemoteCmd.h"
 #include "QCamData.h"
 
 static int kinectId = 0;
@@ -37,7 +39,12 @@ static qeo_state_writer_t *pplstate_writer; //Publish the state to the world
 static qeo_event_reader_t *mastercmd_reader; //Read cmds from MasterApp
 static qeo_event_writer_t *mastercmd_writer; //Write Cmds to test the reader
 
-static void sendCmd()
+void start_server();
+
+// This function is called when a system call fails. It displays a message about the error on stderr and then aborts the program
+void error(char *msg);
+
+static void sendCmd(remoteCmd rCmd)
 {
 	org_qeo_qeoblaster_qeokinect_PeoplePresenceState_t changeState; //from, room - strings, num_people - int
 	changeState.id = kinectId;
@@ -49,7 +56,7 @@ static void sendCmd()
 	//decide to send the command to irBlaster 
 	org_qeo_qeoblaster_qeoir_IRCommand_t irCmd; //from, cmd - strings
 	irCmd.from = nameUser;
-	irCmd.cmd  = irCommand;
+	irCmd.cmd  = remoteCmdNames[rCmd];
 	qeo_event_writer_write(ircmd_writer, &irCmd);
 }
 
@@ -66,7 +73,7 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
 	{
                 printf("Decrease in Pop :: Sending Cmd : Before %d Now %d Max %d\n", numPplInRoom, msg->number, maxNumPpl);
 		numPplInRoom = msg->number; //Update number of ppl in room
-                sendCmd();
+                sendCmd(REMOTE_LAST_CMD);
 	}
         else if (msg->number > numPplInRoom)
         {
@@ -79,7 +86,7 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
 		{
                         printf("Increase in Pop:: Sending Cmd : Before %d Now %d Max %d\n", numPplInRoom, msg->number, maxNumPpl);
 			numPplInRoom = msg->number;
-			sendCmd();
+			sendCmd(REMOTE_LAST_CMD);
 		}
 	}
 }
@@ -109,6 +116,7 @@ static void help(void)
     printf("  /sendEvent     test your event receiver\n");
     printf("  /bye           quit irBlaster application\n");
     printf("  /help          display this help\n");
+    printf("  /server        starts the socket server for remote port 999\n");
     printf("  /name <name>   change user name\n");
 }
 
@@ -131,6 +139,9 @@ static void handle_command(const char *cmd,
     else if (0 == strncmp("name ", cmd, 5)) {
         free(chat_msg->from);
         chat_msg->from = strdup(&cmd[5]);
+    }
+    else if (0 == strcmp("server", cmd)) {
+	start_server(999);
     }
 }
 
@@ -204,4 +215,54 @@ int main(int argc, const char **argv)
 	    qeo_factory_close(qeo);
     }
     return 0;
+}
+
+void start_server(int port)
+{
+	int sockfd, newsockfd, clilen, n;
+	char buffer[256];
+	struct sockaddr_in serv_addr, cli_addr;
+	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+       if (sockfd < 0) 
+		error("ERROR opening socket");
+	bzero((char *) &serv_addr, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_port = htons(port);
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
+	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+		error("ERROR on binding");
+	listen(sockfd,5);
+	clilen = sizeof(cli_addr);
+	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	if (newsockfd < 0) 
+       	error("ERROR on accept");
+
+	while(1) {
+		bzero(buffer,256);
+		// read the message
+		n = read(newsockfd,buffer,255);
+		if (n < 0) error("ERROR reading from socket");
+		printf("Here is the message: %s\n",buffer);
+		if (0 == strcmp(buffer, remoteCmdNames[REMOTE_PLAY])) 
+			sendCmd(REMOTE_PLAY);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_PAUSE]))
+			sendCmd(REMOTE_PAUSE);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_PREV]))
+			sendCmd(REMOTE_PREV);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_NEXT]))
+			sendCmd(REMOTE_NEXT);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_POWER]))
+			sendCmd(REMOTE_POWER);
+		else if (0 == strcmp(buffer, remoteCmdNames[REMOTE_STOP]))
+			sendCmd(REMOTE_STOP);
+		else
+			printf("Unrecognized Command : %s\n", buffer);
+            
+	}
+}
+
+void error(char *msg)
+{
+	perror(msg);
+	exit(1);
 }

@@ -80,10 +80,16 @@ class PeopleStateReader {
     ~IRWriter() {
 	qeo_event_writer_close(msg_writer_);
     }
+    void WritePlay() {
+        org_qeo_qeoblaster_qeoir_IRCommand_t msg;
+        msg.from = "master_app";
+        msg.cmd  = "PLAY";
+        qeo_event_writer_write(msg_writer_, &msg);
+    }
     void WritePause() {
 	org_qeo_qeoblaster_qeoir_IRCommand_t msg;
 	msg.from = "master_app";
-	msg.cmd = "pause_play";
+	msg.cmd = "PAUSE";
 	qeo_event_writer_write(msg_writer_, &msg);
     }
   private:
@@ -123,8 +129,9 @@ int main(int argc, const char **argv)
     while(true) {
 	cout << "----===== MENU =====----" << endl;
 	cout << "1. Set Number of People" << endl;
-	cout << "2. Send IR Blast" << endl;
-	cout << "3. Exit" << endl;
+	cout << "2. Send Pause IR Blast" << endl;
+        cout << "3. Send Play IR Blast" <<endl;
+	cout << "4. Exit" << endl;
 	cout << "Enter a command: ";
 	cin >> cmd;
 	
@@ -138,6 +145,9 @@ int main(int argc, const char **argv)
 	} else if(cmd == 2) {
 	    ir_writer.WritePause();
 	    cout << "Sent Pause to IR Blaster" << endl;
+        } else if (cmd == 3) {
+            ir_writer.WritePlay();
+            cout << "Sent Play to IR Blaster" <<endl;
 	} else if(cmd == 3) {
 	    cout << "Bye Bye!" << endl;
 	    return 0;

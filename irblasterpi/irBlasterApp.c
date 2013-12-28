@@ -20,11 +20,10 @@
 #include <sys/types.h>
 
 #include <qeo/api.h>
-
+#include "../masterapp/RemoteCmd.h"
 #include "QIRBlaster.h"
 
 /* ===[ Cmd message listeners ]============================================= */
-
 static void on_receive_cmd (const qeo_event_reader_t *reader,
                             const void *data,
                             uintptr_t userdata)
@@ -33,8 +32,21 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
 
     /* Whenever a new cmd arrives, print it to stdout and issue the comand to Mock */
     printf("Issuer = %s :: Command = %s\n", msg->from, msg->cmd);
-    //TODO : Call the IR Blaster Mockup here!
-}
+    if (strcmp(msg->cmd, remoteCmdNames[REMOTE_PLAY]) == 0)
+            system ("irsend SEND_ONCE sony KEY_PLAY");
+    else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_PAUSE]) == 0)
+            system ("irsend SEND_ONCE sony KEY_PAUSE");
+    else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_PREV]) == 0)
+	    system ("irsend SEND_ONCE sony KEY_PREVIOUS");
+    else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_NEXT]) == 0)
+            system ("irsend SEND_ONCE sony KEY_NEXT");
+    else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_POWER]) == 0)
+            system ("irsend SEND_ONCE sony KEY_POWER");
+    else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_STOP]) == 0)
+	    system ("irsend SEND_ONCE sony KEY_STOP");
+    else
+	    printf("Unknown Command at IR-Blaster\n");
+}	
 
 static qeo_event_reader_listener_t _listener = { .on_data = on_receive_cmd };
 
