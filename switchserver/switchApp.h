@@ -9,12 +9,15 @@
 #include <unordered_map>
 #include <boost/asio.hpp>
 #include <boost/date_time.hpp>
+#include <boost/regex.hpp>
 #include <boost/thread.hpp>
 #include <mutex>
+#include <regex>
 
 extern "C" {
 #include <qeo/api.h>
 #include "../irblasterpi/QIRBlaster.h" //Move all header files to one location?
+//TODO : Add ZWave and ZigBee header files!
 #include "config_structs.h"
 }
 
@@ -77,12 +80,14 @@ typedef enum DEVICE_TYPE {
 
 enum CommandList {
   GET_NUM_DEVICES, //Number of devices
+  GET_DEVICE_IDS,
   GET_DEVICE_INFO, //Device ID => Name, State, Event
   END_CONVERSATION //Command to end Conversation
 };
 
 static const char * CommandListNames[] = {
   "GET_NUM_DEVICES\n",
+  "GET_DEVICE_IDS\n",
   "GET_DEVICE_INFO_", //partial match - GET_DEVICE_INFO_<DeviceID>
   "END_CONVERSATION"
 };

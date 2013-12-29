@@ -25,6 +25,16 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     ss << devIdNameMap.size() << "\n";
     nextSendMsg = ss.str();
     std::cout << "GET_NUM_DEVICES command - Sending : " << nextSendMsg << std::endl;
+  } else if (cmd.find(CommandListNames[GET_DEVICE_IDS]) != std::string::npos) {
+    map<int, Device *>::iterator devItr;
+    stringstream ss;
+    for (devItr = devIdMap.begin(); devItr != devIdMap.end(); devItr++) {
+      ss << devItr->first << "_" ;
+    }
+    ss << "\n";
+
+    nextSendMsg = ss.str();
+    std::cout << "GET_DEVICE_IDS command - Sending : " << nextSendMsg << std::endl;
   } else if (cmd.find(CommandListNames[GET_DEVICE_INFO]) != std::string::npos) {
     //GET_DEVICE_INFO_<DeviceId> - send details of Device corresponding to DeviceId
     cmd.pop_back();
@@ -113,22 +123,26 @@ void netWork (short port) {
 
 void populateIREvents (Device * dev) {
   if (IR_EVENTS_DEFAULT) { //Populate it with default commands
-
+    dev->addSubEvent("SONY_PLAY");
+    dev->addSubEvent("SONY_PAUSE");
   } else { //Read the .conf file and populate the commands
 
   }
 }
 
 void populateZigBEvents (Device * dev) {
-   
+  dev->addPubEvent ("SWITCH_ON");
+  dev->addPubEvent ("SWITCH_OFF"); 
 }
 
 void populateZWaveEvents (Device * dev) {
-
+  dev->addSubEvent ("TURN_ON");
+  dev->addSubEvent ("TURN_OFF");
 }
 
 void populateKinnectEvents (Device * dev) {
-
+  dev->addPubEvent ("RIGHT_CIRCLE");
+  dev->addPubEvent ("LEFT_CIRCLE");
 }
 
 void initDevices() {
@@ -155,15 +169,49 @@ void initDevices() {
 
 void sendCmdToZigBee (string cmd) {
   //Send 'cmd' to ZigBee!
+  std::cout << "Sending " << cmd " to ZigBee " << std::endl;
 }
 
 void sendCmdToZWave (string cmd) {
-  //Send 'cmd' to ZWave! 
+  //Send 'cmd' to ZWave!
+  std::cout << "Sending " << cmd << " to ZWave " << std::endl; 
 }
 
 void sendCmdToIRBlaster (string cmd) {
   //Split cmd into remote and the action type (<REMOTE_TYPE>_<ACTION>)
   //then use system call and irsend to perform the action!
+  boost::regex re("(.*)_(.*)");
+  boost::cmatch cm;
+  if (boost::regex_match(cmd.c_str(), cm, re)) {
+    string remote(cm[1].first, cm[1].second);
+    string rcmd (cmd[2].first, cm[2].second);
+    std::cout << "Sending to IRBlaster " << cmd << " Remote : " << remote << " Command : " << rcmd << std::endl;
+    stringstream ss; 
+    ss << "irsend " << "SEND_ONCE " << remote << " " << rcmd;
+    system (ss.str());
+  } else {
+    std::cout << "Illegal Format received in sendCmdtoIRBlaster : " << cmd << std::endl;
+  }
+}
+
+DEVICE_TYPE devIdToTypeMap (int devId) {
+  switch (devId) {
+    case kinnectDevId: 
+    return KINNECT_DEVICE;
+
+    case zigBeeDevId:
+    return ZIGBEE_DEVICE;
+
+    case zWaveDevId:
+    return ZWAVE_DEVICE;
+
+    case irBlasterDevId:
+    return IRBLASTER_DEVICE; 
+
+    default:
+    std::cout << "Unknown Device ID! " << devId << std::endl;
+    return DEVICE_TYPE_LAST;
+  }
 }
 
 void performAction (DEVICE_TYPE dType, string cmd) {
@@ -192,8 +240,14 @@ static void on_kinect_event (const qeo_event_reader_t * reader, const void * dat
   printf("Kinnect Channel : %s sent Command = %s\n", msg->from, msg->cmd);
   vLock.lock(); //Lock the config structure and walk through it and find out if we have actions to do
   for (const config &c : allMap) {
-
+    if (c.cause_device_id == kinnectDevId) {
+      if (0 == strcmp(c.cause_name, cmd.c_str())) {
+        //Found a match; Ignoring state/event bool for now!
+        performAction (devIdToTypeMap(c.effect_device_id), c.effect_name);
+      }
+    }
   }
+  vLock.unlock();
 }
 
 void qeoLoop() {
@@ -268,10 +322,14 @@ int main(int argc, char * argv[]) {
 std::string Devices::getDeviceInfo () {
   stringstream ss;
   ss << name << "_" ;
-  for (const std::string &eventName : eventList)
-    ss << "E_" << eventName << "_";
-  for (const std::string &stateName : stateList)
-    ss << "S_" << stateName << "_";
+  for (const std::string &eventName : eventPubList)
+    ss << "EP_" << eventName << "_";
+  for (const std::string &stateName : statePubList)
+    ss << "SP_" << stateName << "_";
+  for (const std::string &eventName : eventSubList)
+    ss << "ES_" << eventName << "_";
+  for (const std::string &stateName : stateSubList)
+    ss << "SS_" << stateName << "_";
   return ss.str();
 }
 
