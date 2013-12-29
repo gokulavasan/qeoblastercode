@@ -42,7 +42,7 @@ class Device
   { }
   std::string getDeviceName(return name;);
   std::string getDeviceInfo();
-  virtual void executeEvent(string name) = 0;
+  //virtual void executeEvent(string name) = 0;
 
   int getDeviceId() { return id; }
   void addPubEvent (string eventName) {
@@ -65,6 +65,14 @@ class Device
     newState.name = stateName;
     stateSubList.push_back(newState);
   }
+};
+
+typedef enum DEVICE_TYPE {
+  ZIGBEE_DEVICE = 1,
+  ZWAVE_DEVICE,
+  IRBLASTER_DEVICE,
+  KINNECT_DEVICE,
+  DEVICE_TYPE_LAST
 };
 
 enum CommandList {

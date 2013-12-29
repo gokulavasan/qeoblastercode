@@ -6,14 +6,15 @@ mutex vLock; //Lock for reading/manipulating allMap
 vector<config> allMap; //All event/state reaction lookup map
 map<int, Device *> devIdMap; //DevID to Name Map
 QeoFactory factory; //QeoFactory object
+const int IR_EVENTS_DEFAULT = 1;
 
-static qeo_event_reader_listener_t kinectCmd_event_listener;
+static qeo_event_reader_listener_t kinect_event_listener;
 
-static void on_kinectCmd_event (const qeo_event_reader_t * reader, const void * data, uintptr_t userdata) {
-  //Cast into kinectCmd qeo struct and then get the event details
-  //Look up the allMap config and issue the command to the device by looking up devIdMap!
+int kinnectDevId = 0;
+int zigBeeDevId = 0;
+int zWaveDevId = 0;
+int irBlasterDevId = 0;
 
-}
 
 //Return 0 if the command is EndConversation else return 1 with  to send in the nextSendMsg
 int processCommand (std::string cmd, std::string &nextSendMsg) {
@@ -110,76 +111,136 @@ void netWork (short port) {
   }
 }
 
+void populateIREvents (Device * dev) {
+  if (IR_EVENTS_DEFAULT) { //Populate it with default commands
 
-//Devices Definitions 
+  } else { //Read the .conf file and populate the commands
 
-class ZWave : public Device 
-{
+  }
+}
+
+void populateZigBEvents (Device * dev) {
+   
+}
+
+void populateZWaveEvents (Device * dev) {
 
 }
 
-class ZigBee : public Device
-{
+void populateKinnectEvents (Device * dev) {
 
 }
-
-class Kinect : public Device
-{
-
-};
-
-
-class IRBlaster : public Device 
-{
-  private:
-    qeo_event_writer_t * msg_writer_;
-  public:
-  IRBlaster (QeoFactory * qeo_factory, std:string devName) : Device(devName) {
-    msg_writer_ = qeo_factory_create_event_writer (qeo_factory->GetFactory(), org_qeo_qeoblaster_qeoir_IRCommand_type, NULL, 0);
-  }
-  ~IRBlaster() {
-    qeo_event_writer_close(msg_writer_);
-  }
-
-  void executeEvent (std::string name) {
-    //Command should be of the form REMOTENAME_ACTION, for ex, SONY_PLAY
-    //Make sure the command is present in the eventSubList!
-    bool found = false;
-    for (const event &e : eventSubList) {
-      if (e.name == name) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      std::cout << name << " command not found in IRBlaster device " << std::endl;
-      return;
-    }
-
-    org_qeo_qeoblaster_qeoir_IRCommand_t msg;
-    msg.from = "switchApp";
-    msg.cmd  = name;
-    qeo_event_writer_write(msg_writer_, &msg);
-  }
-};
-
 
 void initDevices() {
-  IRBlaster * irB = new IRBlaster (&factory, "IRBlaster");
-  irB->addSubEvent("SONY_PLAY");
-  irB->addSubEvent("SONY_PAUSE");
+  Device * irB = new Device("irBlaster");
+  Device * zigB = new Device ("ZigBee");
+  Device * zWave = new Device("ZWave");
+  Device * kinDev = new Device("Kinect");
+  
+  irBlasterDevId = irB->getDeviceId();
+  zigBeeDevId = zigB->getDeviceId(); 
+  zWaveDevId = zWave->getDeviceId();
+  kinnectDevId = kinDev->getDeviceId();
+
+  devIdMap[irBlasterDevId] = irB;
+  devIdMap[zigBeeDevId] = zigB;
+  devIdMap[zWaveDevId] = zWave;
+  devIdMap[kinnectDevId] = kinDev;
+
+  populateIREvents (irB);
+  populateZigBEvents (zigB);
+  populateZWaveEvents (zWave);
+  populateKinnectEvents (kinDev);
+}
+
+void sendCmdToZigBee (string cmd) {
+  //Send 'cmd' to ZigBee!
+}
+
+void sendCmdToZWave (string cmd) {
+  //Send 'cmd' to ZWave! 
+}
+
+void sendCmdToIRBlaster (string cmd) {
+  //Split cmd into remote and the action type (<REMOTE_TYPE>_<ACTION>)
+  //then use system call and irsend to perform the action!
+}
+
+void performAction (DEVICE_TYPE dType, string cmd) {
+  switch (dType) {
+    case ZIGBEE_DEVICE: 
+    sendCmdToZigBee (cmd);
+    break;
+
+    case ZWAVE_DEVICE:
+    sendCmdToZWave (cmd);
+    break;
+
+    case IRBLASTER_DEVICE:
+    sendCmdToIRBlaster (cmd);
+    break;
+
+    default:
+    std::cout << "Invalid Device_TYpe in performAction " << dType << std::endl;
+  }
+}
+
+static void on_kinect_event (const qeo_event_reader_t * reader, const void * data, uintptr_t userdata) {
+  //Cast into kinectCmd qeo struct and then get the event details
+  //Look up the allMap config and issue the command to the device by looking up devIdMap!
+  org_qeo_qeoblaster_qeoir_IRCommand_t *msg = (org_qeo_qeoblaster_qeoir_IRCommand_t *)data;
+  printf("Kinnect Channel : %s sent Command = %s\n", msg->from, msg->cmd);
+  vLock.lock(); //Lock the config structure and walk through it and find out if we have actions to do
+  for (const config &c : allMap) {
+
+  }
 }
 
 void qeoLoop() {
   factory.Initialize();
   //Connect all the listener callback functions!
-  kinectCmd_event_listener.on_data = on_kinectCmd_event;
-  kinectCmd_event_listener.on_remove = NULL;
-
+  kinect_event_listener.on_data = on_kinect_event;
+  kinect_event_listener.on_remove = NULL;
   initDevices(); //Initialize current devices in the system
 }
 
+void zigBeeComm() {
+  while (1) {
+    //Blocking Read -- If ZigBee is sending commands - if we get commands
+    //lookup the config map and then act accordingly
+    string cmd = "SWITCHOFF"; //TODO : Replace with a blocking read call here!
+    std::cout << "SwitchApp : Received " << cmd <<" command from zigBee " << std::endl;
+    vLock.lock(); //Lock the config structure and walk through it and find out if have actions to do 
+    for (const config &c : allMap) {
+      if (c.cause_device_id == zigBeeDevId) {
+        if (0 == strcmp(c.cause_name, cmd.c_str())) {
+          //Found a match; Ignoring state/event bool for now!
+          performAction (devIdToTypeMap(c.effect_device_id), c.effect_name);
+        }
+      }
+    }
+    vLock.unlock();
+  }
+}
+
+void zWaveComm() {
+  while (1) {
+    //Blocking Read -- If ZWave is sending commands, if we get commands 
+    //lookup the config map and then act accordingly
+    string cmd = "SWITCHON"; //TODO: Replace with a blocking call here!
+    std::cout << "SwitchApp : Received " << cmd <<" command from zWave " << std::endl;
+    vLock.lock();
+    for (const config &c : allMap) {
+      if (c.cause_device_id == zWaveDevId) {
+        if (0 == strcmp (c.cause_name, cmd.c_str())) {
+          //Found a match; Ignoring state/event bool for now!
+          performAction (devIdToTypeMap(c.effect_device_id), c.effect_name);
+        }
+      }
+    }
+    vLock.unlock();
+  }
+}
 
 int main(int argc, char * argv[]) {
   try {
@@ -190,7 +251,11 @@ int main(int argc, char * argv[]) {
 
     using namespace std;
     boost::thread netWork(&serveRequests, atoi(argv[1]));  
-    boost::thread qeoWork(&qeoLoop);  
+    boost::thread qeoWork(&qeoLoop);
+    boost::thread zWaveAgent(&zWaveComm);
+    boost::thread zigBeeAgent(&zBeeComm);
+    zWaveAgent.join();
+    zigBeeAgent.join();  
     netWork.join();
     qeoWork.join();
     //Will not reach here!
