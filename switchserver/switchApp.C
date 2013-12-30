@@ -66,14 +66,76 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     nextSendMsg = ss.str();
     std::cout << cmd << " received - Sending : " << nextSendMsg << std::endl;
   } else if (cmd.find(CommandListNames[SET_MAP_ACTION]) != std::string::npos) {
-    //SET_MAP_ACTION -- add a config
-  
+    //SET_MAP_ACTION -- add a config - currently works only for event -> event based mapping!
+    boost::regex re ("SET_MAP_(.*?)_(.*?)_(.*?)_(.*?)_(.*?)_(.*)");
+    boost::cmatch cm;
+    if (boost::regex_match(cmd.c_str(), cm, re)) {
+      string sId(cm[1].first, cm[1].second); //source devId
+      string sES(cm[2].first, cm[2].second); //source event/state
+      string sName(cm[3].first, cm[3].second); //source action name
+      string dId(cm[4].first, cm[4].second);  //destionation devId
+      string dES(cm[5].first, cm[5].second);  //destination event/state
+      string dName(cm[6].first, cm[6].second); //destination action name
+      int sDevId = atoi(sId);
+      int dDevId = atoi(dId);
+      config newConfig;
+      newConfig.cause_device_id = sDevId;
+      newConfig.cause_state_event = (sES == "S") ? true : false;
+      strcpy(newConfig.cause_name, sName.c_str());
+      newConfig.effect_device_id = dDevId;
+      newConfig.cause_state_event = (dES == "S") ? true : false; 
+      strcpy(newConfig.effect_name, dName.c_str());
+      vLock.lock();
+      allMap.push_back(config);
+      vLock.unlock();
+      std::cout << "Config Added : Source = " << sID << "::" << sName << " to " << "Dest = " << dId << "::dName " << std::endl;
+      nextSendMsg = "CONFIGADDED\n";
+    } else {
+      std::cout << "Config Format not correct received : " << cmd << std::endl;
+      nextSendMsg = "CONFIGFAILURE\n";
+    }
   } else if (cmd.find(CommandListNames[SET_UNMAP_ACTION]) != std::string::npos) {
     //SET_UNMAP_ACTION -- remove maps correspoding to that event
-  
+    boost::regex re ("SET_UNMAP_(.*?)_(.*?)_(.*)");
+    boost::cmatch cm;
+    if (boost::regex_match(cmd.c_str(), cm, re)) {
+      string sId (cm[1].first, cm[1].second);
+      string sES (cm[2].first, cm[2].second);
+      string sName (cm[3].first, cm[3].second);
+      int sDevId = atoi(sId);
+      bool SorE = (sES == "S") ? true : false;
+      vLock.lock();
+      vector<config>::iterator it = allMap.begin();
+      while (it != allMap.end()) {
+        if ((sDevId == c.cause_device_id) && (SorE == c.cause_state_event) && (0 == strcmp(c.cause_name, sName.c_str()))) {
+          it = allMap.erase(it);
+        } else {
+          ++it;
+        }
+      }
+      vLock.unlock();
+      std::cout << "Config Deleted : Source = " << sId << "::" << sName << std::endl;
+      nextSendMsg = "UNMAPSUCCESS\n";
+    } else {
+      std::cout << "Config UnMap Format NOT correct : " << cmd << std::endl;
+      nextSendMsg = "UNMAPFAILURE\n";
+    }
   } else if (cmd.find(CommandListNames[GET_ALL_MAP]) != std::string::npos) {
     //GET_ALL_MAP -- send the current config map to WebServer!
-  
+    stringstream ss;
+    vLock.lock();
+    for (const config &c : allMap) {
+      string es = (c.cause_state_event) ? "S" : "E";
+      string es2 = (c.effect_state_event) ? "S" : "E";
+      string ename (c.cause_name);
+      string ename2 (c.effect_name);
+      ss << c.cause_device_id << "_" << es << "_" << ename << "_" << c.effect_device_id << "_" << es2 << "_" << ename2;
+      ss << "," ;
+    }
+    vLock.unlock();
+    ss << "\n";
+    nextSendMsg = ss.str();
+    std::cout << "Sending all Map details " << nextSendMsg; 
   } else if (cmd.find(CommandListNames[KINECT_CMD]) != std::string::npos) {
     //KINECT_CMD_<Command> - perform action on kinect event - for testing purpose
     boost::regex re ("KINECT_CMD_(.*)");
@@ -161,8 +223,8 @@ void netWork (short port) {
 
 void populateIREvents (Device * dev) {
   if (IR_EVENTS_DEFAULT) { //Populate it with default commands
-    dev->addSubEvent("SONY:KEY_PLAY");
-    dev->addSubEvent("SONY:KEY_PAUSE");
+    dev->addSubEvent("SONYNEW:KEY_PLAY");
+    dev->addSubEvent("SONYNEW:KEY_PAUSE");
   } else { //Read the .conf file and populate the commands
     std::vector<std::string> commands;
     readLircConfig (commands);
