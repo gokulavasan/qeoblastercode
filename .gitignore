@@ -12,4 +12,7 @@ irblasterpi/qeoirblaster
 masterapp/master-app
 Debug
 *.sdf
+QeoBlasterWebConfig/target
+QeoBlasterWebConfig/out
+QeoBlasterWebConfig/.idea
 ipch
