@@ -12,7 +12,6 @@
 #include <boost/regex.hpp>
 #include <boost/thread.hpp>
 #include <mutex>
-#include <regex>
 
 extern "C" {
 #include <qeo/api.h>
@@ -79,16 +78,24 @@ typedef enum DEVICE_TYPE {
 };
 
 enum CommandList {
+  GET_ECHO_COMMAND, //Echo Command for testing - return the command part of it!
   GET_NUM_DEVICES, //Number of devices
   GET_DEVICE_IDS,
   GET_DEVICE_INFO, //Device ID => Name, State, Event
+  SET_MAP_ACTION, //Action -> Reaction
+  SET_UNMAP_ACTION, //Unmap the Action
+  GET_ALL_MAP, //Get all current mappings
   END_CONVERSATION //Command to end Conversation
 };
 
 static const char * CommandListNames[] = {
+  "GET_ECHO_", //partial match - GET_ECHO_<Sentence> => returns the <Sentence> part of the command back
   "GET_NUM_DEVICES\n",
   "GET_DEVICE_IDS\n",
   "GET_DEVICE_INFO_", //partial match - GET_DEVICE_INFO_<DeviceID>
+  "SET_MAP_", //partial match - SET_MAP_<DevId>_<E>_<ESName>_<DevId>_<E>_<ESName>
+  "SET_UNMAP_", //partial match - SET_UNMAP_<DevId>_<E>_<ESName> #Unmaps all actions associated with this occurence
+  "GET_ALL_MAP", //send the current mapping config
   "END_CONVERSATION"
 };
 

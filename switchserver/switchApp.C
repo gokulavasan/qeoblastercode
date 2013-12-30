@@ -6,7 +6,8 @@ mutex vLock; //Lock for reading/manipulating allMap
 vector<config> allMap; //All event/state reaction lookup map
 map<int, Device *> devIdMap; //DevID to Name Map
 QeoFactory factory; //QeoFactory object
-const int IR_EVENTS_DEFAULT = 1;
+const int IR_EVENTS_DEFAULT = 0; //0 -> Read from lircd.conf
+const std::string LIRCDFILE = "/etc/lirc/lircd.conf";
 
 static qeo_event_reader_listener_t kinect_event_listener;
 
@@ -123,10 +124,13 @@ void netWork (short port) {
 
 void populateIREvents (Device * dev) {
   if (IR_EVENTS_DEFAULT) { //Populate it with default commands
-    dev->addSubEvent("SONY_PLAY");
-    dev->addSubEvent("SONY_PAUSE");
+    dev->addSubEvent("SONY:KEY_PLAY");
+    dev->addSubEvent("SONY:KEY_PAUSE");
   } else { //Read the .conf file and populate the commands
-
+    std::vector<std::string> commands;
+    readLircConfig (commands);
+    for (const string &s : commands)
+      dev->addSubEvent(s);
   }
 }
 
@@ -180,7 +184,7 @@ void sendCmdToZWave (string cmd) {
 void sendCmdToIRBlaster (string cmd) {
   //Split cmd into remote and the action type (<REMOTE_TYPE>_<ACTION>)
   //then use system call and irsend to perform the action!
-  boost::regex re("(.*)_(.*)");
+  boost::regex re("(.*):(.*)");
   boost::cmatch cm;
   if (boost::regex_match(cmd.c_str(), cm, re)) {
     string remote(cm[1].first, cm[1].second);
@@ -333,3 +337,50 @@ std::string Devices::getDeviceInfo () {
   return ss.str();
 }
 
+void readLircConfig(std::vector<std::string> &cmd) {
+  using namespace std;
+  string file = LIRCDFILE;
+  ifstream f (file.c_str());
+  if (!f.is_open()) {
+    cout << "Couldn't open " << file << endl;
+  } else {
+    string line;
+    while (getline(f, line)) {
+      boost::regex re ("include \"(.*)\"");
+      boost::cmatch cm;
+      if (boost::regex_match(line.c_str(), cm, re)) {
+        string remote (cm[1].first, cm[1].second);
+        cout << remote << endl;
+        ifstream rf (remote.c_str());
+        if (!rf.is_open()) {
+          cout << "Couldn't open " << remote << endl;
+        } else {
+          string key;
+          while (getline(rf, key)) {
+            boost::regex nam (".*name  (.*)");
+            boost::cmatch kn;
+            string remname;
+            if (boost::regex_match(key.c_str(), kn, nam)) {
+              string name (kn[1].first, kn[1].second);
+              cout << "Remote Name " << name << endl;
+              remname = name;
+            }
+
+            boost::regex rel (".*(KEY_[A-Z]*).*0x.*");
+            boost::cmatch km;
+            if (boost::regex_match(key.c_str(), km, rel)) {
+              string keyl (km[1].first, km[1].second);
+              cout << keyl << endl;
+              stringstream ss;
+              ss << remname << ":" << keyl;
+              cmd.push_back(ss.str());
+            }
+          }
+        }
+      } else {
+        cout << "Didn't work" << endl;
+      }
+    }
+  }
+  return 0;
+}
