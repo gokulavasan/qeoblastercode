@@ -85,6 +85,7 @@ enum CommandList {
   SET_MAP_ACTION, //Action -> Reaction
   SET_UNMAP_ACTION, //Unmap the Action
   GET_ALL_MAP, //Get all current mappings
+  KINECT_CMD, //Send Kinect command from WebServer for testing
   END_CONVERSATION //Command to end Conversation
 };
 
@@ -96,6 +97,7 @@ static const char * CommandListNames[] = {
   "SET_MAP_", //partial match - SET_MAP_<DevId>_<E>_<ESName>_<DevId>_<E>_<ESName>
   "SET_UNMAP_", //partial match - SET_UNMAP_<DevId>_<E>_<ESName> #Unmaps all actions associated with this occurence
   "GET_ALL_MAP", //send the current mapping config
+  "KINECT_CMD_", //partial match - KINECT_CMD_<Cmd> #For testing actions on kinect commands!
   "END_CONVERSATION"
 };
 

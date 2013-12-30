@@ -11,7 +11,7 @@ const std::string LIRCDFILE = "/etc/lirc/lircd.conf";
 
 static qeo_event_reader_listener_t kinect_event_listener;
 
-int kinnectDevId = 0;
+int kinectDevId = 0;
 int zigBeeDevId = 0;
 int zWaveDevId = 0;
 int irBlasterDevId = 0;
@@ -20,7 +20,18 @@ int irBlasterDevId = 0;
 //Return 0 if the command is EndConversation else return 1 with  to send in the nextSendMsg
 int processCommand (std::string cmd, std::string &nextSendMsg) {
   int returnCode = 1;
-  if (cmd.find(CommandListNames[GET_NUM_DEVICES]) != std::string::npos) {
+  if (cmd.find(CommandListNames[GET_ECHO_COMMAND]) != std::string::npos) {
+    boost::regex re ("GET_ECHO_(.*)");
+    boost::cmatch cm;
+    stringstream ss;
+    if (boost::regex_match(cmd.c_str(), cm, re)) {
+      string remote (cm[1].first, cm[1].second);
+      ss << remote << "\n";
+      nextSendMsg = ss.str();
+    } else {
+      nextSendMsg = "ECHO\n";
+    }
+  } else if (cmd.find(CommandListNames[GET_NUM_DEVICES]) != std::string::npos) {
     //GET_NUM_DEVICES command - send number of devices present in the system
     stringstream ss;
     ss << devIdNameMap.size() << "\n";
@@ -33,15 +44,20 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
       ss << devItr->first << "_" ;
     }
     ss << "\n";
-
     nextSendMsg = ss.str();
     std::cout << "GET_DEVICE_IDS command - Sending : " << nextSendMsg << std::endl;
   } else if (cmd.find(CommandListNames[GET_DEVICE_INFO]) != std::string::npos) {
     //GET_DEVICE_INFO_<DeviceId> - send details of Device corresponding to DeviceId
-    cmd.pop_back();
-    cmd.pop_back(); //Remove "\n"
-    int devId = atoi(cmd.back());
-    stringstream ss;
+    boost::regex re ("GET_DEVICE_INFO_(.*)");
+    boost::cmatch cm;
+    string devIdStr;
+    if (boost::regex_match(cmd.c_str(), cm, re)) {
+      string val (cm[1].first, cm[1].second);
+      devIdStr = val;
+    }
+    stringstream ss (devIdStr);
+    int devId;
+    devId << ss;
     if (devIdMap.find(devId) != devIdMap.end()) 
       ss << (deviceIdMap[devId])->getDeviceInfo() << "\n";
     else 
@@ -49,6 +65,27 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     
     nextSendMsg = ss.str();
     std::cout << cmd << " received - Sending : " << nextSendMsg << std::endl;
+  } else if (cmd.find(CommandListNames[SET_MAP_ACTION]) != std::string::npos) {
+    //SET_MAP_ACTION -- add a config
+  
+  } else if (cmd.find(CommandListNames[SET_UNMAP_ACTION]) != std::string::npos) {
+    //SET_UNMAP_ACTION -- remove maps correspoding to that event
+  
+  } else if (cmd.find(CommandListNames[GET_ALL_MAP]) != std::string::npos) {
+    //GET_ALL_MAP -- send the current config map to WebServer!
+  
+  } else if (cmd.find(CommandListNames[KINECT_CMD]) != std::string::npos) {
+    //KINECT_CMD_<Command> - perform action on kinect event - for testing purpose
+    boost::regex re ("KINECT_CMD_(.*)");
+    boost::cmatch cm;
+    if (boost::regex_match(cmd.c_str(), cm, re)) {
+      string kCmd (cm[1].first, cm[1].second);
+      std::cout << kCmd << " received Kinect Command from WebServer " << std::endl;
+      deviceEvent(kCmd, kinectDevId);
+      nextSendMsg = "KINECTCMDOK\n";
+    } else {
+      nextSendMsg = "KINECTCMDFAIL\n";
+    }
   } else if (cmd.find(CommandListNames[END_CONVERSATION]) != std::string::npos) {
     //END_CONVERSATIOn - ending the conversation with the client
     std::cout << cmd << " received - Ending Conversation Successfully ! " << std::endl;
@@ -158,12 +195,12 @@ void initDevices() {
   irBlasterDevId = irB->getDeviceId();
   zigBeeDevId = zigB->getDeviceId(); 
   zWaveDevId = zWave->getDeviceId();
-  kinnectDevId = kinDev->getDeviceId();
+  kinectDevId = kinDev->getDeviceId();
 
   devIdMap[irBlasterDevId] = irB;
   devIdMap[zigBeeDevId] = zigB;
   devIdMap[zWaveDevId] = zWave;
-  devIdMap[kinnectDevId] = kinDev;
+  devIdMap[kinectDevId] = kinDev;
 
   populateIREvents (irB);
   populateZigBEvents (zigB);
@@ -200,7 +237,7 @@ void sendCmdToIRBlaster (string cmd) {
 
 DEVICE_TYPE devIdToTypeMap (int devId) {
   switch (devId) {
-    case kinnectDevId: 
+    case kinectDevId: 
     return KINNECT_DEVICE;
 
     case zigBeeDevId:
@@ -237,21 +274,26 @@ void performAction (DEVICE_TYPE dType, string cmd) {
   }
 }
 
-static void on_kinect_event (const qeo_event_reader_t * reader, const void * data, uintptr_t userdata) {
-  //Cast into kinectCmd qeo struct and then get the event details
-  //Look up the allMap config and issue the command to the device by looking up devIdMap!
-  org_qeo_qeoblaster_qeoir_IRCommand_t *msg = (org_qeo_qeoblaster_qeoir_IRCommand_t *)data;
-  printf("Kinnect Channel : %s sent Command = %s\n", msg->from, msg->cmd);
-  vLock.lock(); //Lock the config structure and walk through it and find out if we have actions to do
+void deviceEvent (string kCmd, int devId) {
+  vLock.lock();
   for (const config &c : allMap) {
-    if (c.cause_device_id == kinnectDevId) {
-      if (0 == strcmp(c.cause_name, cmd.c_str())) {
+    if (c.cause_device_id == devId) {
+      if (0 == strcmp(c.cause_name, kCmd.c_str())) {
         //Found a match; Ignoring state/event bool for now!
         performAction (devIdToTypeMap(c.effect_device_id), c.effect_name);
       }
     }
   }
   vLock.unlock();
+}
+
+static void on_kinect_event (const qeo_event_reader_t * reader, const void * data, uintptr_t userdata) {
+  //Cast into kinectCmd qeo struct and then get the event details
+  //Look up the allMap config and issue the command to the device by looking up devIdMap!
+  org_qeo_qeoblaster_qeoir_IRCommand_t *msg = (org_qeo_qeoblaster_qeoir_IRCommand_t *)data;
+  printf("Kinnect Channel : %s sent Command = %s\n", msg->from, msg->cmd);
+  string kCmd(msg->cmd);
+  deviceEvent(kCmd, kinectDevId);
 }
 
 void qeoLoop() {
@@ -268,16 +310,7 @@ void zigBeeComm() {
     //lookup the config map and then act accordingly
     string cmd = "SWITCHOFF"; //TODO : Replace with a blocking read call here!
     std::cout << "SwitchApp : Received " << cmd <<" command from zigBee " << std::endl;
-    vLock.lock(); //Lock the config structure and walk through it and find out if have actions to do 
-    for (const config &c : allMap) {
-      if (c.cause_device_id == zigBeeDevId) {
-        if (0 == strcmp(c.cause_name, cmd.c_str())) {
-          //Found a match; Ignoring state/event bool for now!
-          performAction (devIdToTypeMap(c.effect_device_id), c.effect_name);
-        }
-      }
-    }
-    vLock.unlock();
+    deviceEvent (cmd, zigBeeDevId);
   }
 }
 
@@ -287,16 +320,7 @@ void zWaveComm() {
     //lookup the config map and then act accordingly
     string cmd = "SWITCHON"; //TODO: Replace with a blocking call here!
     std::cout << "SwitchApp : Received " << cmd <<" command from zWave " << std::endl;
-    vLock.lock();
-    for (const config &c : allMap) {
-      if (c.cause_device_id == zWaveDevId) {
-        if (0 == strcmp (c.cause_name, cmd.c_str())) {
-          //Found a match; Ignoring state/event bool for now!
-          performAction (devIdToTypeMap(c.effect_device_id), c.effect_name);
-        }
-      }
-    }
-    vLock.unlock();
+    deviceEvent (cmd, zWaveDevId);
   }
 }
 
