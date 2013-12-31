@@ -9,6 +9,7 @@ irblasterpi/*.o
 masterapp/*.o
 switchserver/*.o
 switchserver/*.work
+switchserver/switchApp
 caminfopi/camInfoBlaster
 irblasterpi/qeoirblaster
 masterapp/master-app

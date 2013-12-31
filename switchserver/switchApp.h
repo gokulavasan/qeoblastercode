@@ -91,8 +91,8 @@ enum CommandList {
 
 static const char * CommandListNames[] = {
   "GET_ECHO_", //partial match - GET_ECHO_<Sentence> => returns the <Sentence> part of the command back
-  "GET_NUM_DEVICES\n",
-  "GET_DEVICE_IDS\n",
+  "GET_NUM_DEVICES",
+  "GET_DEVICE_IDS",
   "GET_DEVICE_INFO_", //partial match - GET_DEVICE_INFO_<DeviceID>
   "SET_MAP_", //partial match - SET_MAP_<DevId>_<E>_<ESName>_<DevId>_<E>_<ESName>
   "SET_UNMAP_", //partial match - SET_UNMAP_<DevId>_<E>_<ESName> #Unmaps all actions associated with this occurence

@@ -215,7 +215,7 @@ void serveRequests (short port) {
       
       std::string rCmd;
       std::istream (&rbuf) >> rCmd; 
-      if (rCmd == "JavaReady\n") {
+      if (rCmd == "JavaReady") {
         if (converse(socket) > 0) {
           std::cout << "Something happenend in Converse " << std::endl;
           break;
