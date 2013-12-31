@@ -381,7 +381,9 @@ void zigBeeComm() {
     //Blocking Read -- If ZigBee is sending commands - if we get commands
     //lookup the config map and then act accordingly
     std::string cmd = "SWITCHOFF"; //TODO : Replace with a blocking read call here!
-    while(1) { }
+    while(1) {
+      boost::this_thread::sleep(boost::posix_time::seconds(5));
+    }
     std::cout << "SwitchApp : Received " << cmd <<" command from zigBee " << std::endl;
     deviceEvent (cmd, zigBeeDevId);
   }
@@ -392,7 +394,9 @@ void zWaveComm() {
     //Blocking Read -- If ZWave is sending commands, if we get commands 
     //lookup the config map and then act accordingly
     std::string cmd = "SWITCHON"; //TODO: Replace with a blocking call here!
-    while(1) { }
+    while(1) { 
+      boost::this_thread::sleep(boost::posix_time::seconds(5));
+    }
     std::cout << "SwitchApp : Received " << cmd <<" command from zWave " << std::endl;
     deviceEvent (cmd, zWaveDevId);
   }
@@ -454,14 +458,16 @@ void readLircConfig(std::vector<std::string> &cmd) {
           cout << "Couldn't open " << remote << endl;
         } else {
           std::string key;
+          string remKey = "";
           while (getline(rf, key)) {
             boost::regex nam (".*name  (.*)");
             boost::cmatch kn;
-            std::string remname;
+            string fKey = remKey;
             if (boost::regex_match(key.c_str(), kn, nam)) {
               std::string name (kn[1].first, kn[1].second);
-              cout << "Remote Name " << name << endl;
-              remname = name;
+              remKey.append(name);
+              fKey = remKey;
+              cout << "Remote Name " << fKey << endl;
             }
 
             boost::regex rel (".*(KEY_[A-Z]*).*0x.*");
@@ -469,9 +475,10 @@ void readLircConfig(std::vector<std::string> &cmd) {
             if (boost::regex_match(key.c_str(), km, rel)) {
               std::string keyl (km[1].first, km[1].second);
               cout << keyl << endl;
-              std::stringstream ss;
-              ss << remname << ":" << keyl;
-              cmd.push_back(ss.str());
+              fKey.append(":");
+              fKey.append(keyl);
+              cout << "Key : " << fKey << endl;
+              cmd.push_back(fKey);
             }
           }
         }

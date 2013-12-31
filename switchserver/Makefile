@@ -4,7 +4,7 @@ CC = gcc
 
 TARGET = switchApp
 LIBDIR = $(QEO_HOME)/c/lib/$(PLATFORM)
-LIBS = -lqeo -lqeoutil -lrt -lpthread -lboost_regex -lboost_thread -lboost_system
+LIBS = -lqeo -lqeoutil -lrt -lpthread -lboost_regex -lboost_thread -lexpect -ltcl8.5 -lboost_system
 CFLAGS = -g -m32 -Wall -std=c++0x -I$(QEO_HOME)/c/include -I/usr/local/include
 
 ifeq ($(QEO_HOME),)
