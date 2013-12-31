@@ -7,6 +7,8 @@ masterapp/QMasterCam.h
 caminfopi/*.o
 irblasterpi/*.o
 masterapp/*.o
+switchserver/*.o
+switchserver/*.work
 caminfopi/camInfoBlaster
 irblasterpi/qeoirblaster
 masterapp/master-app

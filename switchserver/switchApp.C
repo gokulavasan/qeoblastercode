@@ -2,20 +2,21 @@
 
 using boost::asio::ip::tcp;
 
-mutex vLock; //Lock for reading/manipulating allMap
-vector<config> allMap; //All event/state reaction lookup map
-map<int, Device *> devIdMap; //DevID to Name Map
-QeoFactory factory; //QeoFactory object
+std::mutex vLock; //Lock for reading/manipulating allMap
+std::vector<config> allMap; //All event/state reaction lookup map
+std::map<int, Device *> devIdMap; //DevID to Name Map
 const int IR_EVENTS_DEFAULT = 0; //0 -> Read from lircd.conf
 const std::string LIRCDFILE = "/etc/lirc/lircd.conf";
 
 static qeo_event_reader_listener_t kinect_event_listener;
-
+int Device::globalDevId = 0;
 int kinectDevId = 0;
 int zigBeeDevId = 0;
 int zWaveDevId = 0;
 int irBlasterDevId = 0;
 
+void deviceEvent (std::string kCmd, int devId);
+void readLircConfig(std::vector<std::string> &cmd);
 
 //Return 0 if the command is EndConversation else return 1 with  to send in the nextSendMsg
 int processCommand (std::string cmd, std::string &nextSendMsg) {
@@ -23,9 +24,9 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
   if (cmd.find(CommandListNames[GET_ECHO_COMMAND]) != std::string::npos) {
     boost::regex re ("GET_ECHO_(.*)");
     boost::cmatch cm;
-    stringstream ss;
+    std::stringstream ss;
     if (boost::regex_match(cmd.c_str(), cm, re)) {
-      string remote (cm[1].first, cm[1].second);
+      std::string remote (cm[1].first, cm[1].second);
       ss << remote << "\n";
       nextSendMsg = ss.str();
     } else {
@@ -33,13 +34,13 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     }
   } else if (cmd.find(CommandListNames[GET_NUM_DEVICES]) != std::string::npos) {
     //GET_NUM_DEVICES command - send number of devices present in the system
-    stringstream ss;
-    ss << devIdNameMap.size() << "\n";
+    std::stringstream ss;
+    ss << devIdMap.size() << "\n";
     nextSendMsg = ss.str();
     std::cout << "GET_NUM_DEVICES command - Sending : " << nextSendMsg << std::endl;
   } else if (cmd.find(CommandListNames[GET_DEVICE_IDS]) != std::string::npos) {
-    map<int, Device *>::iterator devItr;
-    stringstream ss;
+    std::map<int, Device *>::iterator devItr;
+    std::stringstream ss;
     for (devItr = devIdMap.begin(); devItr != devIdMap.end(); devItr++) {
       ss << devItr->first << "_" ;
     }
@@ -50,16 +51,17 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     //GET_DEVICE_INFO_<DeviceId> - send details of Device corresponding to DeviceId
     boost::regex re ("GET_DEVICE_INFO_(.*)");
     boost::cmatch cm;
-    string devIdStr;
+    std::string devIdStr;
     if (boost::regex_match(cmd.c_str(), cm, re)) {
-      string val (cm[1].first, cm[1].second);
+      std::string val (cm[1].first, cm[1].second);
       devIdStr = val;
     }
-    stringstream ss (devIdStr);
+    std::stringstream ss;
+    std::stringstream devSS (devIdStr);
     int devId;
-    devId << ss;
+    devSS >> devId;
     if (devIdMap.find(devId) != devIdMap.end()) 
-      ss << (deviceIdMap[devId])->getDeviceInfo() << "\n";
+      ss << (devIdMap[devId])->getDeviceInfo() << "\n";
     else 
       ss << "NOTFOUND" << devId << "\n";
     
@@ -70,14 +72,14 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     boost::regex re ("SET_MAP_(.*?)_(.*?)_(.*?)_(.*?)_(.*?)_(.*)");
     boost::cmatch cm;
     if (boost::regex_match(cmd.c_str(), cm, re)) {
-      string sId(cm[1].first, cm[1].second); //source devId
-      string sES(cm[2].first, cm[2].second); //source event/state
-      string sName(cm[3].first, cm[3].second); //source action name
-      string dId(cm[4].first, cm[4].second);  //destionation devId
-      string dES(cm[5].first, cm[5].second);  //destination event/state
-      string dName(cm[6].first, cm[6].second); //destination action name
-      int sDevId = atoi(sId);
-      int dDevId = atoi(dId);
+      std::string sId(cm[1].first, cm[1].second); //source devId
+      std::string sES(cm[2].first, cm[2].second); //source event/state
+      std::string sName(cm[3].first, cm[3].second); //source action name
+      std::string dId(cm[4].first, cm[4].second);  //destionation devId
+      std::string dES(cm[5].first, cm[5].second);  //destination event/state
+      std::string dName(cm[6].first, cm[6].second); //destination action name
+      int sDevId = atoi(sId.c_str());
+      int dDevId = atoi(dId.c_str());
       config newConfig;
       newConfig.cause_device_id = sDevId;
       newConfig.cause_state_event = (sES == "S") ? true : false;
@@ -86,9 +88,9 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
       newConfig.cause_state_event = (dES == "S") ? true : false; 
       strcpy(newConfig.effect_name, dName.c_str());
       vLock.lock();
-      allMap.push_back(config);
+      allMap.push_back(newConfig);
       vLock.unlock();
-      std::cout << "Config Added : Source = " << sID << "::" << sName << " to " << "Dest = " << dId << "::dName " << std::endl;
+      std::cout << "Config Added : Source = " << sId << "::" << sName << " to " << "Dest = " << dId << "::dName " << std::endl;
       nextSendMsg = "CONFIGADDED\n";
     } else {
       std::cout << "Config Format not correct received : " << cmd << std::endl;
@@ -99,14 +101,15 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     boost::regex re ("SET_UNMAP_(.*?)_(.*?)_(.*)");
     boost::cmatch cm;
     if (boost::regex_match(cmd.c_str(), cm, re)) {
-      string sId (cm[1].first, cm[1].second);
-      string sES (cm[2].first, cm[2].second);
-      string sName (cm[3].first, cm[3].second);
-      int sDevId = atoi(sId);
+      std::string sId (cm[1].first, cm[1].second);
+      std::string sES (cm[2].first, cm[2].second);
+      std::string sName (cm[3].first, cm[3].second);
+      int sDevId = atoi(sId.c_str());
       bool SorE = (sES == "S") ? true : false;
       vLock.lock();
-      vector<config>::iterator it = allMap.begin();
+      std::vector<config>::iterator it = allMap.begin();
       while (it != allMap.end()) {
+        config c = *it;
         if ((sDevId == c.cause_device_id) && (SorE == c.cause_state_event) && (0 == strcmp(c.cause_name, sName.c_str()))) {
           it = allMap.erase(it);
         } else {
@@ -122,13 +125,13 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     }
   } else if (cmd.find(CommandListNames[GET_ALL_MAP]) != std::string::npos) {
     //GET_ALL_MAP -- send the current config map to WebServer!
-    stringstream ss;
+    std::stringstream ss;
     vLock.lock();
     for (const config &c : allMap) {
-      string es = (c.cause_state_event) ? "S" : "E";
-      string es2 = (c.effect_state_event) ? "S" : "E";
-      string ename (c.cause_name);
-      string ename2 (c.effect_name);
+      std::string es = (c.cause_state_event) ? "S" : "E";
+      std::string es2 = (c.effect_state_change) ? "S" : "E";
+      std::string ename (c.cause_name);
+      std::string ename2 (c.effect_name);
       ss << c.cause_device_id << "_" << es << "_" << ename << "_" << c.effect_device_id << "_" << es2 << "_" << ename2;
       ss << "," ;
     }
@@ -141,7 +144,7 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     boost::regex re ("KINECT_CMD_(.*)");
     boost::cmatch cm;
     if (boost::regex_match(cmd.c_str(), cm, re)) {
-      string kCmd (cm[1].first, cm[1].second);
+      std::string kCmd (cm[1].first, cm[1].second);
       std::cout << kCmd << " received Kinect Command from WebServer " << std::endl;
       deviceEvent(kCmd, kinectDevId);
       nextSendMsg = "KINECTCMDOK\n";
@@ -154,7 +157,7 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     returnCode = 0;
   } else {
     std::cout << cmd << " received - Unknown Command ! " << std::endl;
-    nextSendMessage = "UNKNOWNCMD\n";
+    nextSendMsg = "UNKNOWNCMD\n";
   }
   return returnCode;
 }
@@ -179,7 +182,9 @@ int converse (tcp::socket& socket) {
       returnCode = 1;
       break;
     }
-    if (processCommand (rbuf.str(), message) > 0)
+    std::string rCmd;
+    std::istream (&rbuf) >> rCmd;
+    if (processCommand (rCmd, message) > 0)
       continue;
     else
       break;
@@ -187,7 +192,7 @@ int converse (tcp::socket& socket) {
   return returnCode;
 }
 
-void netWork (short port) {
+void serveRequests (short port) {
   while (1) {
     boost::asio::io_service io_service;
     tcp::acceptor acceptor (io_service, tcp::endpoint(tcp::v4(), port));
@@ -208,13 +213,15 @@ void netWork (short port) {
         break;
       }
       
-      if (rbuf.str() == "JavaReady\n") {
+      std::string rCmd;
+      std::istream (&rbuf) >> rCmd; 
+      if (rCmd == "JavaReady\n") {
         if (converse(socket) > 0) {
           std::cout << "Something happenend in Converse " << std::endl;
           break;
         }
       } else {
-        std::cout << "Received Wrong Ack : " << rbuf.str() << std::endl;
+        std::cout << "Received Wrong Ack : " << rCmd << std::endl;
         break;
       }
     }
@@ -228,7 +235,7 @@ void populateIREvents (Device * dev) {
   } else { //Read the .conf file and populate the commands
     std::vector<std::string> commands;
     readLircConfig (commands);
-    for (const string &s : commands)
+    for (const std::string &s : commands)
       dev->addSubEvent(s);
   }
 }
@@ -270,54 +277,49 @@ void initDevices() {
   populateKinnectEvents (kinDev);
 }
 
-void sendCmdToZigBee (string cmd) {
+void sendCmdToZigBee (std::string cmd) {
   //Send 'cmd' to ZigBee!
-  std::cout << "Sending " << cmd " to ZigBee " << std::endl;
+  std::cout << "Sending " << cmd << " to ZigBee " << std::endl;
 }
 
-void sendCmdToZWave (string cmd) {
+void sendCmdToZWave (std::string cmd) {
   //Send 'cmd' to ZWave!
   std::cout << "Sending " << cmd << " to ZWave " << std::endl; 
 }
 
-void sendCmdToIRBlaster (string cmd) {
+void sendCmdToIRBlaster (std::string cmd) {
   //Split cmd into remote and the action type (<REMOTE_TYPE>_<ACTION>)
   //then use system call and irsend to perform the action!
   boost::regex re("(.*):(.*)");
   boost::cmatch cm;
   if (boost::regex_match(cmd.c_str(), cm, re)) {
-    string remote(cm[1].first, cm[1].second);
-    string rcmd (cmd[2].first, cm[2].second);
+    std::string remote(cm[1].first, cm[1].second);
+    std::string rcmd (cm[2].first, cm[2].second);
     std::cout << "Sending to IRBlaster " << cmd << " Remote : " << remote << " Command : " << rcmd << std::endl;
-    stringstream ss; 
+    std::stringstream ss; 
     ss << "irsend " << "SEND_ONCE " << remote << " " << rcmd;
-    system (ss.str());
+    system ((ss.str()).c_str());
   } else {
     std::cout << "Illegal Format received in sendCmdtoIRBlaster : " << cmd << std::endl;
   }
 }
 
 DEVICE_TYPE devIdToTypeMap (int devId) {
-  switch (devId) {
-    case kinectDevId: 
-    return KINNECT_DEVICE;
-
-    case zigBeeDevId:
+  if (devId == kinectDevId) 
+    return KINECT_DEVICE;
+  else if (devId == zigBeeDevId)
     return ZIGBEE_DEVICE;
-
-    case zWaveDevId:
+  else if (devId == zWaveDevId) 
     return ZWAVE_DEVICE;
-
-    case irBlasterDevId:
-    return IRBLASTER_DEVICE; 
-
-    default:
+  else if (devId == irBlasterDevId)
+    return IRBLASTER_DEVICE;
+  else {
     std::cout << "Unknown Device ID! " << devId << std::endl;
     return DEVICE_TYPE_LAST;
   }
 }
 
-void performAction (DEVICE_TYPE dType, string cmd) {
+void performAction (DEVICE_TYPE dType, std::string cmd) {
   switch (dType) {
     case ZIGBEE_DEVICE: 
     sendCmdToZigBee (cmd);
@@ -336,7 +338,7 @@ void performAction (DEVICE_TYPE dType, string cmd) {
   }
 }
 
-void deviceEvent (string kCmd, int devId) {
+void deviceEvent (std::string kCmd, int devId) {
   vLock.lock();
   for (const config &c : allMap) {
     if (c.cause_device_id == devId) {
@@ -354,23 +356,32 @@ static void on_kinect_event (const qeo_event_reader_t * reader, const void * dat
   //Look up the allMap config and issue the command to the device by looking up devIdMap!
   org_qeo_qeoblaster_qeoir_IRCommand_t *msg = (org_qeo_qeoblaster_qeoir_IRCommand_t *)data;
   printf("Kinnect Channel : %s sent Command = %s\n", msg->from, msg->cmd);
-  string kCmd(msg->cmd);
+  std::string kCmd(msg->cmd);
   deviceEvent(kCmd, kinectDevId);
 }
 
 void qeoLoop() {
-  factory.Initialize();
-  //Connect all the listener callback functions!
+  qeo_factory_t * qeo;
+  qeo_event_reader_t * msg_reader;
+  qeo = qeo_factory_create();
   kinect_event_listener.on_data = on_kinect_event;
-  kinect_event_listener.on_remove = NULL;
+  //Connect all the listener callback functions!
+  if (qeo != NULL) {
+    msg_reader = qeo_factory_create_event_reader(qeo, org_qeo_qeoblaster_qeoir_IRCommand_type, &kinect_event_listener, 0);
+  } else {
+    std::cout << "ERROR : Couldn't start QEO Listener!" << std::endl;
+  }
   initDevices(); //Initialize current devices in the system
+  std::cout << "QEO Loop started! " << std::endl;
+  while (1) { }
 }
 
 void zigBeeComm() {
   while (1) {
     //Blocking Read -- If ZigBee is sending commands - if we get commands
     //lookup the config map and then act accordingly
-    string cmd = "SWITCHOFF"; //TODO : Replace with a blocking read call here!
+    std::string cmd = "SWITCHOFF"; //TODO : Replace with a blocking read call here!
+    while(1) { }
     std::cout << "SwitchApp : Received " << cmd <<" command from zigBee " << std::endl;
     deviceEvent (cmd, zigBeeDevId);
   }
@@ -380,7 +391,8 @@ void zWaveComm() {
   while (1) {
     //Blocking Read -- If ZWave is sending commands, if we get commands 
     //lookup the config map and then act accordingly
-    string cmd = "SWITCHON"; //TODO: Replace with a blocking call here!
+    std::string cmd = "SWITCHON"; //TODO: Replace with a blocking call here!
+    while(1) { }
     std::cout << "SwitchApp : Received " << cmd <<" command from zWave " << std::endl;
     deviceEvent (cmd, zWaveDevId);
   }
@@ -397,7 +409,7 @@ int main(int argc, char * argv[]) {
     boost::thread netWork(&serveRequests, atoi(argv[1]));  
     boost::thread qeoWork(&qeoLoop);
     boost::thread zWaveAgent(&zWaveComm);
-    boost::thread zigBeeAgent(&zBeeComm);
+    boost::thread zigBeeAgent(&zigBeeComm);
     zWaveAgent.join();
     zigBeeAgent.join();  
     netWork.join();
@@ -409,45 +421,45 @@ int main(int argc, char * argv[]) {
   }
 }
 
-std::string Devices::getDeviceInfo () {
-  stringstream ss;
+std::string Device::getDeviceInfo () {
+  std::stringstream ss;
   ss << name << "_" ;
-  for (const std::string &eventName : eventPubList)
-    ss << "EP_" << eventName << "_";
-  for (const std::string &stateName : statePubList)
-    ss << "SP_" << stateName << "_";
-  for (const std::string &eventName : eventSubList)
-    ss << "ES_" << eventName << "_";
-  for (const std::string &stateName : stateSubList)
-    ss << "SS_" << stateName << "_";
+  for (const struct event &e : eventPubList)
+    ss << "EP_" << e.name << "_";
+  for (const struct state &s : statePubList)
+    ss << "SP_" << s.name << "_";
+  for (const struct event &e : eventSubList)
+    ss << "ES_" << e.name << "_";
+  for (const struct state &s : stateSubList)
+    ss << "SS_" << s.name << "_";
   return ss.str();
 }
 
 void readLircConfig(std::vector<std::string> &cmd) {
   using namespace std;
-  string file = LIRCDFILE;
+  std::string file = LIRCDFILE;
   ifstream f (file.c_str());
   if (!f.is_open()) {
     cout << "Couldn't open " << file << endl;
   } else {
-    string line;
+    std::string line;
     while (getline(f, line)) {
       boost::regex re ("include \"(.*)\"");
       boost::cmatch cm;
       if (boost::regex_match(line.c_str(), cm, re)) {
-        string remote (cm[1].first, cm[1].second);
+        std::string remote (cm[1].first, cm[1].second);
         cout << remote << endl;
         ifstream rf (remote.c_str());
         if (!rf.is_open()) {
           cout << "Couldn't open " << remote << endl;
         } else {
-          string key;
+          std::string key;
           while (getline(rf, key)) {
             boost::regex nam (".*name  (.*)");
             boost::cmatch kn;
-            string remname;
+            std::string remname;
             if (boost::regex_match(key.c_str(), kn, nam)) {
-              string name (kn[1].first, kn[1].second);
+              std::string name (kn[1].first, kn[1].second);
               cout << "Remote Name " << name << endl;
               remname = name;
             }
@@ -455,9 +467,9 @@ void readLircConfig(std::vector<std::string> &cmd) {
             boost::regex rel (".*(KEY_[A-Z]*).*0x.*");
             boost::cmatch km;
             if (boost::regex_match(key.c_str(), km, rel)) {
-              string keyl (km[1].first, km[1].second);
+              std::string keyl (km[1].first, km[1].second);
               cout << keyl << endl;
-              stringstream ss;
+              std::stringstream ss;
               ss << remname << ":" << keyl;
               cmd.push_back(ss.str());
             }
@@ -468,5 +480,4 @@ void readLircConfig(std::vector<std::string> &cmd) {
       }
     }
   }
-  return 0;
 }

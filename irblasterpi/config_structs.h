@@ -44,4 +44,4 @@ typedef struct config_t
 	//*************************************************************************
 } config;
 
-#endif CONFIG_STRUCTS_H
+#endif 

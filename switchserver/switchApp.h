@@ -17,7 +17,7 @@ extern "C" {
 #include <qeo/api.h>
 #include "../irblasterpi/QIRBlaster.h" //Move all header files to one location?
 //TODO : Add ZWave and ZigBee header files!
-#include "config_structs.h"
+#include "../irblasterpi/config_structs.h"
 }
 
 
@@ -35,34 +35,34 @@ class Device
   static int globalDevId;
   int id;
   std::string name;
-  vector<event> eventPubList;  //Events published -- Commands from Kinnect for ex
-  vector<state> statePubList;  //States published -- State from some device for ex
-  vector<event> eventSubList;  //Events subscribed -- Commands for IR Blaster for ex
-  vector<state> stateSubList;  //States subscribed -- Not sure where this will be used 
+  std::vector<event> eventPubList;  //Events published -- Commands from Kinnect for ex
+  std::vector<state> statePubList;  //States published -- State from some device for ex
+  std::vector<event> eventSubList;  //Events subscribed -- Commands for IR Blaster for ex
+  std::vector<state> stateSubList;  //States subscribed -- Not sure where this will be used 
   public:
   Device (std::string name_) : name (name_), id (globalDevId++) 
   { }
-  std::string getDeviceName(return name;);
+  std::string getDeviceName() { return name; }
   std::string getDeviceInfo();
-  //virtual void executeEvent(string name) = 0;
+  //virtual void executeEvent(std::string name) = 0;
 
   int getDeviceId() { return id; }
-  void addPubEvent (string eventName) {
+  void addPubEvent (std::string eventName) {
     event newEvent;
     newEvent.name = eventName;
     eventPubList.push_back(newEvent);
   }
-  void addPubState (string stateName) {
+  void addPubState (std::string stateName) {
     state newState;
     newState.name = stateName;
     statePubList.push_back(newState);
   }
-  void addSubEvent (string eventName) {
+  void addSubEvent (std::string eventName) {
     event newEvent;
     newEvent.name = eventName;
     eventSubList.push_back(newEvent);
   }
-  void addSubState (string stateName) {
+  void addSubState (std::string stateName) {
     state newState;
     newState.name = stateName;
     stateSubList.push_back(newState);
@@ -73,7 +73,7 @@ typedef enum DEVICE_TYPE {
   ZIGBEE_DEVICE = 1,
   ZWAVE_DEVICE,
   IRBLASTER_DEVICE,
-  KINNECT_DEVICE,
+  KINECT_DEVICE,
   DEVICE_TYPE_LAST
 };
 
