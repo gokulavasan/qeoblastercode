@@ -1,0 +1,26 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui'
+             xmlns:container="urn:import:com.sencha.gxt.widget.core.client.container">
+
+    <ui:with field="resources" type="com.qeoblaster.webconfig.client.WebConfigResources"/>
+
+    <ui:style>
+        .main {
+            background-color: black;
+        }
+    </ui:style>
+
+    <g:LayoutPanel styleName="{style.main}">
+        <g:layer left="0" top="0" width="400" height="200">
+            <g:Image resource="{resources.logo}"/>
+        </g:layer>
+        <g:layer>
+            <g:DockLayoutPanel>
+                <g:center>
+                    <container:CenterLayoutContainer ui:field="center">
+                    </container:CenterLayoutContainer>
+                </g:center>
+            </g:DockLayoutPanel>
+        </g:layer>
+    </g:LayoutPanel>
+</ui:UiBinder>
