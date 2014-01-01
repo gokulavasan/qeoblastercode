@@ -512,7 +512,7 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
   }
   
   cout<<"Started Remote Add " << remName << endl;
-  enum {initStage,randKey,firstRandKey,buttonStart,buttonPress,allSuccess};
+  enum {initStage,randKey,firstRandKey,buttonStart,buttonPress,allSuccess,noData};
   boost::system::error_code syserr;
   struct exp_case cases[] = {
     { "Press RETURN to continue.",  NULL, exp_glob, initStage},
@@ -521,6 +521,7 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
     { "Please enter the name for the next button", NULL, exp_glob, buttonStart},
     { "Now hold down button", NULL, exp_glob, buttonPress},
     { "Successfully written config file", NULL, exp_glob, allSuccess},
+    { "irrecord: no data for 10 secs, aborting", NULL, exp_glob, noData},
     0
   };
   
@@ -683,7 +684,12 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
       availRemotes.insert(std::pair<std::string, bool> (remName, true));
       done = true;
       break;
-       
+      
+      case noData:
+      cout << "No Data Found for 10seconds. Stopping recording!" << endl;
+      success = false;
+      break;
+
       case EXP_TIMEOUT:
       cout << "Hit Timeout in expect!" << endl;
       success = false;
