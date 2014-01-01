@@ -5,8 +5,9 @@
              xmlns:container="urn:import:com.sencha.gxt.widget.core.client.container"
              xmlns:button="urn:import:com.sencha.gxt.widget.core.client.button">
 
-    <ui:with type="com.sencha.gxt.widget.core.client.container.VerticalLayoutContainer.VerticalLayoutData" field="verticalLayoutData">
-        <ui:attributes width="1" height="-1" />
+    <ui:with type="com.sencha.gxt.widget.core.client.container.VerticalLayoutContainer.VerticalLayoutData"
+             field="verticalLayoutData">
+        <ui:attributes width="1" height="-1"/>
     </ui:with>
 
     <g:VerticalPanel>

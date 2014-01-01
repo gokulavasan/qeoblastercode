@@ -23,7 +23,7 @@ public class SettingsPage implements IsWidget {
     private static SettingsPage instance = null;
 
     public static SettingsPage get() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new SettingsPage();
         }
         return instance;

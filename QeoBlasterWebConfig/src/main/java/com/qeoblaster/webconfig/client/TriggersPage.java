@@ -22,12 +22,14 @@ public class TriggersPage implements IsWidget {
     private static TriggersPage instance = null;
 
     public static TriggersPage get() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new TriggersPage();
         }
         return instance;
     }
+
     private Widget root;
+
     public TriggersPage() {
         root = ourUiBinder.createAndBindUi(this);
     }

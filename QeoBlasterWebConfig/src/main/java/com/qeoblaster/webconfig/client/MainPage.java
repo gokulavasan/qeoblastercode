@@ -35,7 +35,7 @@ public class MainPage implements IsWidget {
     }
 
     static public MainPage get() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new MainPage();
         }
         return instance;

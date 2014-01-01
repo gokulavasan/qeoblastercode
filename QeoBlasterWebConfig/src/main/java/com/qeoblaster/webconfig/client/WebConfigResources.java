@@ -10,4 +10,10 @@ public interface WebConfigResources extends ClientBundle {
     @Source("logo.png")
     @ImageResource.ImageOptions(width = 400, height = 200)
     ImageResource logo();
+
+    @Source("plus-24.png")
+    ImageResource plus24();
+
+    @Source("cross-24.png")
+    ImageResource cross24();
 }

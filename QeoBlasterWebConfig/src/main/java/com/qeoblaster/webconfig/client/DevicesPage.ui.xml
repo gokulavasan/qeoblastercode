@@ -1,17 +1,29 @@
 <ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
              xmlns:g='urn:import:com.google.gwt.user.client.ui'
-             xmlns:container="urn:import:com.sencha.gxt.widget.core.client.container">
+             xmlns:container="urn:import:com.sencha.gxt.widget.core.client.container"
+             xmlns:button='urn:import:com.sencha.gxt.widget.core.client.button'
+             xmlns:toolbar="urn:import:com.sencha.gxt.widget.core.client.toolbar">
 
-    <container:HorizontalLayoutContainer width="100%" height="100%">
-        <container:child>
-            <container:VerticalLayoutContainer width="30%">
-                <g:Label text="left side"/>
-            </container:VerticalLayoutContainer>
-        </container:child>
-        <container:child>
-            <container:VerticalLayoutContainer width="70%">
-                <g:Label text="right side"/>
-            </container:VerticalLayoutContainer>
-        </container:child>
-    </container:HorizontalLayoutContainer>
+    <ui:with field="resources" type="com.qeoblaster.webconfig.client.WebConfigResources"/>
+
+    <container:VerticalLayoutContainer width="100%" height="100%">
+        <toolbar:ToolBar>
+            <button:TextButton ui:field="btnAddDevice" text="Add Device" minWidth="130" iconAlign="LEFT"
+                               icon="{resources.plus24}"/>
+            <button:TextButton ui:field="btnRemoveDevice" text="Remove Device" minWidth="130" iconAlign="LEFT"
+                               icon="{resources.cross24}"/>
+        </toolbar:ToolBar>
+        <container:HorizontalLayoutContainer width="100%" height="100%">
+            <container:child>
+                <container:VerticalLayoutContainer width="40%" ui:field="registeredDeviceListView">
+
+                </container:VerticalLayoutContainer>
+            </container:child>
+            <container:child>
+                <container:VerticalLayoutContainer width="60%" ui:field="deviceDetail">
+
+                </container:VerticalLayoutContainer>
+            </container:child>
+        </container:HorizontalLayoutContainer>
+    </container:VerticalLayoutContainer>
 </ui:UiBinder>

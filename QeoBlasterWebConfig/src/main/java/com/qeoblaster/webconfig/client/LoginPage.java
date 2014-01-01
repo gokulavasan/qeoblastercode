@@ -37,8 +37,8 @@ public class LoginPage implements IsWidget {
         loginButton.addSelectHandler(new SelectEvent.SelectHandler() {
             @Override
             public void onSelect(SelectEvent selectEvent) {
-                    MainPage.get().getCenter().setWidget(new MainMenu());
-                    MainPage.get().getCenter().forceLayout();
+                MainPage.get().getCenter().setWidget(new MainMenu());
+                MainPage.get().getCenter().forceLayout();
             }
         });
     }

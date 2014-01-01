@@ -3,7 +3,6 @@ package com.qeoblaster.webconfig.client;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
-import com.google.gwt.soyc.Settings;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.IsWidget;
@@ -58,7 +57,7 @@ public class MainMenu implements IsWidget {
         triggersButton.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
             @Override
             public void onValueChange(ValueChangeEvent<Boolean> booleanValueChangeEvent) {
-                if(booleanValueChangeEvent.getValue() == true) {
+                if (booleanValueChangeEvent.getValue() == true) {
                     cp.setHeadingText("Triggers");
                     container.setWidget(TriggersPage.get());
                 }
@@ -67,7 +66,7 @@ public class MainMenu implements IsWidget {
         settingsButton.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
             @Override
             public void onValueChange(ValueChangeEvent<Boolean> booleanValueChangeEvent) {
-                if(booleanValueChangeEvent.getValue() == true) {
+                if (booleanValueChangeEvent.getValue() == true) {
                     cp.setHeadingText("Settings");
                     container.setWidget(SettingsPage.get());
                 }
