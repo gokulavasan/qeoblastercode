@@ -5,6 +5,10 @@ using boost::asio::ip::tcp;
 std::mutex vLock; //Lock for reading/manipulating allMap
 std::vector<config> allMap; //All event/state reaction lookup map
 std::map<int, Device *> devIdMap; //DevID to Name Map
+std::map<std::string, bool> availRemotes; //Avail Remote Names
+std::map<std::string, bool> validKeyNames; //Valid Remote Key Names
+char currPath[FILENAME_MAX]; //CurrPath
+
 const int IR_EVENTS_DEFAULT = 0; //0 -> Read from lircd.conf
 const std::string LIRCDFILE = "/etc/lirc/lircd.conf";
 
@@ -15,11 +19,13 @@ int zigBeeDevId = 0;
 int zWaveDevId = 0;
 int irBlasterDevId = 0;
 
+//Function declarations
 void deviceEvent (std::string kCmd, int devId);
 void readLircConfig(std::vector<std::string> &cmd);
+std::string addNewRemote (const std::string &remName, tcp::socket& socket);
 
 //Return 0 if the command is EndConversation else return 1 with  to send in the nextSendMsg
-int processCommand (std::string cmd, std::string &nextSendMsg) {
+int processCommand (std::string cmd, std::string &nextSendMsg, tcp::socket& socket) {
   int returnCode = 1;
   if (cmd.find(CommandListNames[GET_ECHO_COMMAND]) != std::string::npos) {
     boost::regex re ("GET_ECHO_(.*)");
@@ -90,7 +96,7 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
       vLock.lock();
       allMap.push_back(newConfig);
       vLock.unlock();
-      std::cout << "Config Added : Source = " << sId << "::" << sName << " to " << "Dest = " << dId << "::dName " << std::endl;
+      std::cout << "Config Added : Source = " << sId << "::" << sName << " to " << "Dest = " << dId << "::" << dName << std::endl;
       nextSendMsg = "CONFIGADDED\n";
     } else {
       std::cout << "Config Format not correct received : " << cmd << std::endl;
@@ -151,6 +157,46 @@ int processCommand (std::string cmd, std::string &nextSendMsg) {
     } else {
       nextSendMsg = "KINECTCMDFAIL\n";
     }
+  } else if (cmd.find(CommandListNames[GET_CURRENT_REMOTE_NAMES]) != std::string::npos) {
+    std::string ret = "";
+    std::map<std::string, bool>::iterator it = availRemotes.begin();
+    for ( ; it != availRemotes.end(); it++) {
+      ret.append(it->first);
+      ret.append(",");
+    }
+    nextSendMsg = ret;
+  } else if (cmd.find(CommandListNames[GET_REMOTE_VALID_KEYS]) != std::string::npos) {
+    std::string ret = "";
+    std::map<std::string, bool>::iterator it = validKeyNames.begin();
+    for ( ; it != validKeyNames.end(); it++) {
+      ret.append(it->first);
+      ret.append(",");
+    }
+    nextSendMsg = ret;
+  } else if (cmd.find(CommandListNames[ADD_REMOTE]) != std::string::npos) {
+    //ADD_REMOTE_<Name> - start adding a new Remote to the system
+    boost::regex re ("ADD_REMOTE_(.*)");
+    boost::cmatch cm;
+    if (boost::regex_match(cmd.c_str(), cm, re)) {
+      std::string remName (cm[1].first, cm[1].second);
+      //Client should make sure it does not accept remote name with already existing name
+      //Delete any remote file config in the current folder with the same name
+      std::string cPath (currPath);
+      cPath.append("/");
+      cPath.append(remName);
+      remove(cPath.c_str());
+      nextSendMsg = addNewRemote (remName, socket);
+      if (nextSendMsg.find("FAIL") == std::string::npos) {
+        //Success adding new remote, modifying lircd.conf; So restart lircd to make it recognize new remote
+        //Lock config before restarting lircd, since we might have some commands issuing irsend
+        std::cout << "Restarting LIRCD daemon" << std::endl;
+        vLock.lock();
+        system("sudo /etc/init.d/lircd restart");
+        vLock.unlock();
+      }
+    } else {
+      nextSendMsg = "ADDREMOTEFAIL\n";
+    }
   } else if (cmd.find(CommandListNames[END_CONVERSATION]) != std::string::npos) {
     //END_CONVERSATIOn - ending the conversation with the client
     std::cout << cmd << " received - Ending Conversation Successfully ! " << std::endl;
@@ -184,7 +230,7 @@ int converse (tcp::socket& socket) {
     }
     std::string rCmd;
     std::istream (&rbuf) >> rCmd;
-    if (processCommand (rCmd, message) > 0)
+    if (processCommand (rCmd, message, socket) > 0)
       continue;
     else
       break;
@@ -228,12 +274,23 @@ void serveRequests (short port) {
   }
 }
 
+void addValidKeyWords (std::map<std::string, bool> &validKeys) {
+  //List obtained from "irrecord --list-namespace" ==> Get all the valid keyNames from here
+  validKeys.insert(std::pair<std::string, bool> ("KEY_PLAY", true));
+  validKeys.insert(std::pair<std::string, bool> ("KEY_PAUSE", true));
+  validKeys.insert(std::pair<std::string, bool> ("KEY_POWER", true));
+  validKeys.insert(std::pair<std::string, bool> ("KEY_STOP", true));
+  validKeys.insert(std::pair<std::string, bool> ("KEY_NEXT", true));
+  validKeys.insert(std::pair<std::string, bool> ("KEY_PREVIOUS", true));
+}
+
 void populateIREvents (Device * dev) {
   if (IR_EVENTS_DEFAULT) { //Populate it with default commands
     dev->addSubEvent("SONYNEW:KEY_PLAY");
     dev->addSubEvent("SONYNEW:KEY_PAUSE");
   } else { //Read the .conf file and populate the commands
     std::vector<std::string> commands;
+    addValidKeyWords(validKeyNames);
     readLircConfig (commands);
     for (const std::string &s : commands)
       dev->addSubEvent(s);
@@ -241,18 +298,18 @@ void populateIREvents (Device * dev) {
 }
 
 void populateZigBEvents (Device * dev) {
-  dev->addPubEvent ("SWITCH_ON");
-  dev->addPubEvent ("SWITCH_OFF"); 
+  dev->addPubEvent ("SWITCHON");
+  dev->addPubEvent ("SWITCHOFF"); 
 }
 
 void populateZWaveEvents (Device * dev) {
-  dev->addSubEvent ("TURN_ON");
-  dev->addSubEvent ("TURN_OFF");
+  dev->addSubEvent ("TURNON");
+  dev->addSubEvent ("TURNOFF");
 }
 
 void populateKinnectEvents (Device * dev) {
-  dev->addPubEvent ("RIGHT_CIRCLE");
-  dev->addPubEvent ("LEFT_CIRCLE");
+  dev->addPubEvent ("RIGHTCIRCLE");
+  dev->addPubEvent ("LEFTCIRCLE");
 }
 
 void initDevices() {
@@ -408,6 +465,12 @@ int main(int argc, char * argv[]) {
       std::cerr << "Usage: switchApp <port> " << std::endl;
       return 1;
     }
+    
+    if (!getcwd(currPath, sizeof(currPath))) 
+      return -1;
+
+    if (chdir(currPath))
+      return -1;
 
     using namespace std;
     boost::thread netWork(&serveRequests, atoi(argv[1]));  
@@ -425,6 +488,210 @@ int main(int argc, char * argv[]) {
   }
 }
 
+
+std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
+  using namespace std;
+  exp_is_debugging = 0;
+  exp_timeout = 30;
+  exp_loguser = 0; //To suppress messages from process on STDOUT assign non-zero value
+  std::string fail = "ADDREMOTEFAIL\n";
+  std::string succ = "ADDREMOTESUCCESS\n";
+  std::string command = "irrecord -H iguanaIR ";
+  vector<string> keyNames;
+  stringstream copy;
+  command.append(remName);
+  FILE * expect = exp_popen((char *) command.c_str());
+  if (expect == 0) {
+    return fail;
+  }
+  
+  cout<<"Started Remote Add " << remName << endl;
+  enum {initStage,randKey,firstRandKey,buttonStart,buttonPress,allSuccess};
+  boost::system::error_code syserr;
+  struct exp_case cases[] = {
+    { "Press RETURN to continue.",  NULL, exp_glob, initStage},
+    { "Press RETURN now to start ", NULL, exp_glob, randKey},
+    { "Please keep on pressing buttons", NULL, exp_glob, firstRandKey},
+    { "Please enter the name for the next button", NULL, exp_glob, buttonStart},
+    { "Now hold down button", NULL, exp_glob, buttonPress},
+    { "Successfully written config file", NULL, exp_glob, allSuccess},
+    0
+  };
+  
+  bool success = true;
+  bool done = false;
+  bool bDone = false;
+
+
+  while (1) {
+    std::string message = "SendCmd\n";
+    boost::asio::streambuf rbuf;
+    string response, rCmd, temp, button;
+    if (!success || done)
+      break;
+
+    switch (exp_fexpectv(expect, cases)) {
+      case initStage:
+        if (!bDone) {
+          cout<<"Reached initial Stage"<<endl;
+          fprintf(expect, "\n"); //Send empty line
+        }
+        break;
+
+      case randKey:
+        cout<<"Reached Arbitrary Key Init : Send OK to continue"<<endl;
+        //Here send a command to client telling it to prompt the user
+        //to press Arbitrary buttons and then once we get ACK proceed
+        //getline(cin, response);
+        message = "ARBKEYSTART\n"; //Inform User to start pressing Arb Key (after pressing OK in a dialog box?)
+        boost::asio::write(socket, boost::asio::buffer(message), syserr);
+        if (syserr) {
+          std::cout << "Some Error in Writing " << message << std::endl;
+          success = false;
+        } else {
+          boost::asio::read_until (socket, rbuf, "\n", syserr);
+          if (syserr) {
+            std::cout << "Some Error while reading in AddRemote" << std::endl;
+            success = false;
+          } else {
+            std::istream (&rbuf) >> rCmd;
+            if (rCmd.find("OK") != std::string::npos) {
+              fprintf(expect, "\n"); //Send empty line to begin recording
+            } else {
+              std::cout << "ArbKey Response : Expected OK ; Got " << rCmd << std::endl;
+              success = false;
+            }
+          }
+        }
+        break;
+     
+      case firstRandKey:
+        cout<<"You are doing great! Keep pressing Arb Keys!"<<endl;
+        break;
+
+      case buttonStart:
+        cout<<"Asking User to Enter a Button Name : "<<endl;
+        //Here ask for the user to enter a button name; Only valid button
+        //names are accepted - generate a list beforehand!
+        //List obtained from "irrecord --list-namespace
+        message = "CHOOSEKEYNAME\n"; //Ask user to choose a key name
+        boost::asio::write(socket, boost::asio::buffer(message), syserr);
+        if (syserr) {
+          std::cout << "Some Error in Writing " << message << std::endl;
+          success = false;
+        } else {
+          boost::asio::read_until (socket, rbuf, "\n", syserr);
+          if (syserr) {
+            std::cout << "Some Error while reading in AddRemote" << std::endl;
+            success = false;
+          } else {
+            std::istream (&rbuf) >> rCmd;
+            if (validKeyNames.find(rCmd) != validKeyNames.end()) { //Valid Key Name
+              button = rCmd;
+              message = "KEYOKPRESSNOW\n"; //Ack that Key is OK and ask user to press button after pressing OK in a dialog box?
+              boost::asio::write(socket, boost::asio::buffer(message), syserr);
+              if (syserr) {
+                std::cout << "Some Error in Writing " << message << std::endl;
+                success = false;
+              } else {
+                boost::asio::read_until (socket, rbuf, "\n", syserr);
+                if (syserr) {
+                  std::cout << "Some Error while reading in AddRemote" << std::endl;
+                  success = false;
+                } else {
+                  std::istream (&rbuf) >> rCmd;
+                  if (rCmd.find("OK") != std::string::npos) {
+                    fprintf(expect, "%s\n", button.c_str());
+                    keyNames.push_back(button);
+                  } else {
+                    std::cout << "Not received OK for " << button << " received " << rCmd << " instead! " << std::endl;
+                    success = false;
+                  } //OK for button ACK
+                } //OK read
+              } //Write KEYOK
+            } else if (rCmd.find("DONEWITHKEY") != std::string::npos) {
+              //User Done with KEYS! 
+              fprintf(expect, "\n");
+              cout << "Done with Keys! Instructing User to Press same button " << endl;
+              message = "KEYOKPRESSSAME\n";
+              boost::asio::write(socket, boost::asio::buffer(message), syserr);
+              if (syserr) {
+                std::cout << "Some Error in Writing " << message << std::endl;
+                success = false;
+              } else {
+                boost::asio::read_until (socket, rbuf, "\n", syserr);
+                if (syserr) {
+                  cout << "Some Error while reading in AddRemote" << std::endl;
+                  success = false;
+                } else {
+                  std::istream (&rbuf) >> rCmd;
+                  if (rCmd.find("OK") != std::string::npos) {
+                    fprintf(expect, "\n");
+                    bDone = true;
+                  } else {
+                    std::cout << "Not received OK for PressSameButton " << " received " << rCmd << std::endl;
+                    success = false;
+                  } // OK for Same Key Ack
+                } //OK for read              
+              } //Write same Key
+            } else {
+              cout << "Received wrong Key Name " << rCmd << endl;
+              success = false;
+            } //Got Key Name 
+          } //OK for read
+        } //Write error for Choose Key
+        break;
+
+      case buttonPress:
+        break;
+      
+      case allSuccess:
+      cout<<"Config File success!"<<endl;
+      temp = "mv ";
+      temp.append(remName);
+      temp.append(" ");
+      temp.append(remName);
+      temp.append(".conf");
+      cout << "Executing " << temp << endl;
+      system(temp.c_str());
+      copy << "cp " << remName << ".conf" << " /usr/share/lirc/remotes/custom/." << "\n";
+      cout << "Executing " << copy.str() << endl;
+      system((copy.str()).c_str());
+      temp = "echo \"include ";
+      temp.append("\\\"/usr/share/lirc/remotes/custom/");
+      temp.append(remName);
+      temp.append(".conf\\\" >> /etc/lirc/lircd.conf");
+      system(temp.c_str());
+      cout << "Executing " << temp << endl;
+      {
+       Device * irBlast = devIdMap[irBlasterDevId];
+       if (irBlast != NULL) {
+         for (string &s : keyNames) {
+           string val = remName;
+           val.append(":");
+           val.append(s);
+           irBlast->addSubEvent(val);
+         }
+       }
+      }
+      done = true;
+      break;
+       
+      case EXP_TIMEOUT:
+      success = false;
+      break; 
+    }
+  }
+
+  fclose (expect);
+  waitpid(exp_pid, 0, 0);
+  if (success) 
+    return succ;
+  return fail;
+}
+
+
+
 std::string Device::getDeviceInfo () {
   std::stringstream ss;
   ss << name << "_" ;
@@ -438,6 +705,7 @@ std::string Device::getDeviceInfo () {
     ss << "SS_" << s.name << "_";
   return ss.str();
 }
+
 
 void readLircConfig(std::vector<std::string> &cmd) {
   using namespace std;
@@ -467,6 +735,7 @@ void readLircConfig(std::vector<std::string> &cmd) {
               std::string name (kn[1].first, kn[1].second);
               remKey.append(name);
               fKey = remKey;
+              availRemotes.insert(pair<string, bool>(remKey, true));
               cout << "Remote Name " << fKey << endl;
             }
 

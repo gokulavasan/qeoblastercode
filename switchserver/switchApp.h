@@ -12,6 +12,9 @@
 #include <boost/regex.hpp>
 #include <boost/thread.hpp>
 #include <mutex>
+#include <sys/wait.h>
+#include <tcl8.5/expect.h>
+#include <unistd.h>
 
 extern "C" {
 #include <qeo/api.h>
@@ -86,6 +89,9 @@ enum CommandList {
   SET_UNMAP_ACTION, //Unmap the Action
   GET_ALL_MAP, //Get all current mappings
   KINECT_CMD, //Send Kinect command from WebServer for testing
+  GET_CURRENT_REMOTE_NAMES, //Get the remote names currently present in LIRCD.conf
+  GET_REMOTE_VALID_KEYS, //Send Valid Remote Key Names
+  ADD_REMOTE, //Add a remote to list of available remotes
   END_CONVERSATION //Command to end Conversation
 };
 
@@ -98,6 +104,9 @@ static const char * CommandListNames[] = {
   "SET_UNMAP_", //partial match - SET_UNMAP_<DevId>_<E>_<ESName> #Unmaps all actions associated with this occurence
   "GET_ALL_MAP", //send the current mapping config
   "KINECT_CMD_", //partial match - KINECT_CMD_<Cmd> #For testing actions on kinect commands!
+  "GET_CURRENT_REMOTE_NAMES",
+  "GET_REMOTE_VALID_KEYS",
+  "ADD_REMOTE_", //partial match - ADD_REMOTE_<Name>
   "END_CONVERSATION"
 };
 
