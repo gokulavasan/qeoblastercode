@@ -10,6 +10,7 @@ masterapp/*.o
 switchserver/*.o
 switchserver/*.work
 switchserver/switchApp
+tcpClientMock/tcpClient
 caminfopi/camInfoBlaster
 irblasterpi/qeoirblaster
 masterapp/master-app
