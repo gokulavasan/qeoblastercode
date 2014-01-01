@@ -6,12 +6,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <signal.h>
 
 #define MODEM "/dev/ttyUSB0"
 #define BAUDRATE B19200
 
 struct termios old_stdio;
-int tty_fd;
+int tty_fd = -1;
 
 void fixTTY()
 {
@@ -19,18 +20,29 @@ void fixTTY()
 	tcsetattr(STDOUT_FILENO, TCSANOW, &old_stdio);
 }
 
+static void terminal_signal(int signum)
+{
+	if(tty_fd != -1)
+		fixTTY();
+	_exit(128 + signum);
+}
+
 int connect_xbee()
 {
+	if(tty_fd != -1)
+		return 0;
 	struct termios tio;
 	struct termios stdio;
 	int flags;
 	unsigned char c = -1;
 	tcgetattr(STDOUT_FILENO, &old_stdio);
 	memset(&stdio, 0, sizeof(stdio));
-	stdio.c_iflag = 0;
+	tcgetattr(STDOUT_FILENO, &stdio);
+	stdio.c_iflag &= ~IGNBRK;
+	stdio.c_iflag |= BRKINT;
 	stdio.c_oflag = 0;
 	stdio.c_cflag = 0;
-	stdio.c_lflag = 0;
+	stdio.c_lflag |= ISIG | ECHO;
 	stdio.c_cc[VMIN] = 1;
 	stdio.c_cc[VTIME] = 0;
 	tcsetattr(STDOUT_FILENO, TCSANOW, &stdio);
@@ -52,16 +64,36 @@ int connect_xbee()
 	cfsetospeed(&tio, BAUDRATE);
 	cfsetispeed(&tio, BAUDRATE);
 	tcsetattr(tty_fd, TCSANOW, &tio);
+
+	if(atexit(fixTTY))
+	{
+		printf("Failed to set exit command");
+		return -1;
+	}
+	struct sigaction act;
+	sigemptyset(&act.sa_mask);
+	act.sa_handler = terminal_signal;
+	act.sa_flags = 0;
+	if(sigaction(SIGHUP, &act, NULL) ||
+	   sigaction(SIGINT, &act, NULL) ||
+	   sigaction(SIGQUIT, &act, NULL) ||
+	   sigaction(SIGTERM, &act, NULL) ||
+	   sigaction(SIGPIPE, &act, NULL) ||
+	   sigaction(SIGALRM, &act, NULL))
+	{
+		printf("Failed setting signal handler\n");
+		return -1;
+	}
 	return 0;
 }
 
 int disconnect_xbee()
 {
-	fixTTY();
+	//fixTTY();
 	return 0;
 }
 
-int get_xbee_signal()
+int get_xbee_signal(char* text, int len)
 {
 	char buf[255];
 	int cnt = 0;
@@ -75,13 +107,13 @@ int get_xbee_signal()
 		{
 			if(buf[1] == 'N') 
 			{
-				printf("got ON signal\r\n");
-				cnt = 0;
+				snprintf(text, len, "ON");
+				return 0;
 			}
 			if(cnt == 3 && buf[1] == 'F' && buf[2] == 'F') 
 			{
-				printf("got OFF signal\r\n");
-				cnt = 0;
+				snprintf(text, len, "OFF");
+				return 0;
 			}
 			else if(cnt > 2)
 				cnt = 0;
