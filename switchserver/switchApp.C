@@ -164,6 +164,8 @@ int processCommand (std::string cmd, std::string &nextSendMsg, tcp::socket& sock
       ret.append(it->first);
       ret.append(",");
     }
+    ret.append("\n");
+    std::cout << "Sending Remote Names : " << ret << std::endl;
     nextSendMsg = ret;
   } else if (cmd.find(CommandListNames[GET_REMOTE_VALID_KEYS]) != std::string::npos) {
     std::string ret = "";
@@ -172,6 +174,8 @@ int processCommand (std::string cmd, std::string &nextSendMsg, tcp::socket& sock
       ret.append(it->first);
       ret.append(",");
     }
+    ret.append("\n");
+    std::cout << "Sending Valid Remote Keys : " << ret << std::endl;
     nextSendMsg = ret;
   } else if (cmd.find(CommandListNames[ADD_REMOTE]) != std::string::npos) {
     //ADD_REMOTE_<Name> - start adding a new Remote to the system
@@ -185,13 +189,15 @@ int processCommand (std::string cmd, std::string &nextSendMsg, tcp::socket& sock
       cPath.append("/");
       cPath.append(remName);
       remove(cPath.c_str());
+      cPath.append(".conf");
+      remove(cPath.c_str());
       nextSendMsg = addNewRemote (remName, socket);
       if (nextSendMsg.find("FAIL") == std::string::npos) {
         //Success adding new remote, modifying lircd.conf; So restart lircd to make it recognize new remote
         //Lock config before restarting lircd, since we might have some commands issuing irsend
         std::cout << "Restarting LIRCD daemon" << std::endl;
         vLock.lock();
-        system("sudo /etc/init.d/lircd restart");
+        system("sudo /etc/init.d/lirc restart");
         vLock.unlock();
       }
     } else {
@@ -525,7 +531,7 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
 
   while (1) {
     std::string message = "SendCmd\n";
-    boost::asio::streambuf rbuf;
+    boost::asio::streambuf rbuf, rbuf2, rbuf3;
     string response, rCmd, temp, button;
     if (!success || done)
       break;
@@ -594,12 +600,12 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
                 std::cout << "Some Error in Writing " << message << std::endl;
                 success = false;
               } else {
-                boost::asio::read_until (socket, rbuf, "\n", syserr);
+                boost::asio::read_until (socket, rbuf2, "\n", syserr);
                 if (syserr) {
                   std::cout << "Some Error while reading in AddRemote" << std::endl;
                   success = false;
                 } else {
-                  std::istream (&rbuf) >> rCmd;
+                  std::istream (&rbuf2) >> rCmd;
                   if (rCmd.find("OK") != std::string::npos) {
                     fprintf(expect, "%s\n", button.c_str());
                     keyNames.push_back(button);
@@ -619,12 +625,12 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
                 std::cout << "Some Error in Writing " << message << std::endl;
                 success = false;
               } else {
-                boost::asio::read_until (socket, rbuf, "\n", syserr);
+                boost::asio::read_until (socket, rbuf2, "\n", syserr);
                 if (syserr) {
                   cout << "Some Error while reading in AddRemote" << std::endl;
                   success = false;
                 } else {
-                  std::istream (&rbuf) >> rCmd;
+                  std::istream (&rbuf2) >> rCmd;
                   if (rCmd.find("OK") != std::string::npos) {
                     fprintf(expect, "\n");
                     bDone = true;
@@ -654,13 +660,13 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
       temp.append(".conf");
       cout << "Executing " << temp << endl;
       system(temp.c_str());
-      copy << "cp " << remName << ".conf" << " /usr/share/lirc/remotes/custom/." << "\n";
+      copy << "sudo cp " << remName << ".conf" << " /usr/share/lirc/remotes/custom/." << "\n";
       cout << "Executing " << copy.str() << endl;
       system((copy.str()).c_str());
-      temp = "echo \"include ";
+      temp = "sudo echo \"include ";
       temp.append("\\\"/usr/share/lirc/remotes/custom/");
       temp.append(remName);
-      temp.append(".conf\\\" >> /etc/lirc/lircd.conf");
+      temp.append(".conf\\\"\" >> /etc/lirc/lircd.conf");
       system(temp.c_str());
       cout << "Executing " << temp << endl;
       {
@@ -674,6 +680,7 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
          }
        }
       }
+      availRemotes.insert(std::pair<std::string, bool> (remName, true));
       done = true;
       break;
        
