@@ -685,6 +685,7 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
       break;
        
       case EXP_TIMEOUT:
+      cout << "Hit Timeout in expect!" << endl;
       success = false;
       break; 
     }
