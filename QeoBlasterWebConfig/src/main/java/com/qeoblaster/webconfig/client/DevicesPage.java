@@ -17,19 +17,27 @@ import com.sencha.gxt.data.shared.LabelProvider;
 import com.sencha.gxt.data.shared.ListStore;
 import com.sencha.gxt.data.shared.ModelKeyProvider;
 import com.sencha.gxt.data.shared.PropertyAccess;
+import com.sencha.gxt.state.client.GridStateHandler;
+import com.sencha.gxt.widget.core.client.ContentPanel;
 import com.sencha.gxt.widget.core.client.Dialog;
 import com.sencha.gxt.widget.core.client.ListView;
 
 import com.sencha.gxt.widget.core.client.box.AlertMessageBox;
+import com.sencha.gxt.widget.core.client.button.ToolButton;
 import com.sencha.gxt.widget.core.client.container.VerticalLayoutContainer;
 import com.sencha.gxt.widget.core.client.button.TextButton;
 import com.sencha.gxt.widget.core.client.event.SelectEvent;
 import com.sencha.gxt.widget.core.client.form.ComboBox;
 import com.sencha.gxt.widget.core.client.form.FieldLabel;
 import com.sencha.gxt.widget.core.client.form.TextField;
+import com.sencha.gxt.widget.core.client.grid.ColumnConfig;
+import com.sencha.gxt.widget.core.client.grid.ColumnModel;
+import com.sencha.gxt.widget.core.client.grid.Grid;
 import com.sencha.gxt.widget.core.client.selection.SelectionChangedEvent;
 import com.sencha.gxt.widget.core.client.info.Info;
+import com.sencha.gxt.widget.core.client.toolbar.ToolBar;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -41,12 +49,19 @@ import static com.google.gwt.editor.client.Editor.Path;
  */
 public class DevicesPage implements IsWidget {
 
+    public static final String PLEASE_RECORD_IR_CMD = "Please \"Record\" IR CMD...";
     private ListView<Device, String> registeredDevices;
     private Label lblDeviceID;
     private Label lblDeviceName;
     private Label lblDeviceType;
     private ComboBox<DeviceTypeModel> cmbDeviceType;
     private TextField newDeviceName;
+    private Label lblSignals;
+    private Grid<Signal> signalTable;
+    private ToolBar irToolbar;
+    private TextField newIRSignalName;
+    private TextField newIRSignalValue;
+    private ComboBox<SignalTypeModel> cmbSignalType;
 
     @Override
     public Widget asWidget() {
@@ -85,6 +100,36 @@ public class DevicesPage implements IsWidget {
 
         @Path("name")
         LabelProvider<DeviceTypeModel> name();
+
+    }
+
+    interface SignalTypeModelProperties extends PropertyAccess<SignalTypeModel> {
+        @Path("key")
+        ModelKeyProvider<SignalTypeModel> key();
+
+        @Path("name")
+        LabelProvider<SignalTypeModel> name();
+
+    }
+
+
+    interface SignalProperties extends PropertyAccess<Signal> {
+        @Path("id")
+        ModelKeyProvider<Signal> id();
+
+
+        @Path("value")
+        ValueProvider<Signal, String> value();
+
+
+        @Path("name")
+        ValueProvider<Signal, String> names();
+
+        @Path("type")
+        ValueProvider<Signal, SignalType> signalType();
+
+        @Path("owner")
+        ValueProvider<Signal, Device> owner();
 
     }
 
@@ -222,30 +267,32 @@ public class DevicesPage implements IsWidget {
 
         final DeviceProperties props = GWT.create(DeviceProperties.class);
         registeredDevices = new ListView<Device, String>(new ListStore<Device>(props.key()), props.name());
-
-
-        //TODO: change the cell type later
-        TextButtonCell textButtonCell = new TextButtonCell();
         registeredDevices.getSelectionModel().setSelectionMode(Style.SelectionMode.SINGLE);
         registeredDevices.getSelectionModel().addSelectionChangedHandler(new SelectionChangedEvent.SelectionChangedHandler<Device>() {
             @Override
             public void onSelectionChanged(SelectionChangedEvent<Device> deviceSelectionChangedEvent) {
                 List<Device> list = deviceSelectionChangedEvent.getSelection();
                 if (list.size() > 0) {
+                    clearDeviceDetail();
                     showDeviceDetail(list.get(0));
                 }
             }
         });
-
-        registeredDevices.setCell(textButtonCell);
         registeredDevices.getStore().addAll(Arrays.asList(TestData.DEVICES));
-
-
+        registeredDevices.setBorders(false);
         registeredDeviceListView.add(registeredDevices);
     }
 
-    private void showDeviceDetail(Device device) {
 
+    /**
+     * show detail information for one device. User also configure signals here
+     *
+     * @param device
+     */
+    private void showDeviceDetail(final Device device) {
+
+
+        // Create Labels
         if (lblDeviceID == null) lblDeviceID = new Label();
         lblDeviceID.setText("ID: " + device.getDeviceID());
 
@@ -255,12 +302,194 @@ public class DevicesPage implements IsWidget {
         if (lblDeviceType == null) lblDeviceType = new Label();
         lblDeviceType.setText("Type: " + device.getType());
 
+        if (lblSignals == null) lblSignals = new Label();
+        lblSignals.setText("Supported Signals: ");
+
+
         deviceDetail.add(lblDeviceID);
         deviceDetail.add(lblDeviceName);
         deviceDetail.add(lblDeviceType);
+        deviceDetail.add(lblSignals);
+
+
+        //show signal grid
+
+
+        SignalProperties sp = GWT.create(SignalProperties.class);
+
+        ColumnConfig<Signal, String> nameCol = new ColumnConfig<Signal, String>(sp.names(), 100, "Name");
+        ColumnConfig<Signal, String> valueCol = new ColumnConfig<Signal, String>(sp.value(), 100, "Value");
+        ColumnConfig<Signal, SignalType> typeCol = new ColumnConfig<Signal, SignalType>(sp.signalType(), 100, "Type");
+
+
+        List<ColumnConfig<Signal, ?>> l = new ArrayList<ColumnConfig<Signal, ?>>();
+        l.add(nameCol);
+        l.add(valueCol);
+        l.add(typeCol);
+
+        ColumnModel<Signal> cm = new ColumnModel<Signal>(l);
+
+        ListStore<Signal> store = new ListStore<Signal>(sp.id());
+        if (device.getSupportedSignal() == null) {
+            store.addAll(new ArrayList<Signal>());
+        } else {
+            store.addAll(device.getSupportedSignal());
+        }
+
+
+        signalTable = new Grid<Signal>(store, cm);
+        signalTable.getView().setAutoExpandColumn(nameCol);
+        signalTable.getView().setStripeRows(true);
+        signalTable.getView().setColumnLines(true);
+        signalTable.setBorders(false);
+        signalTable.setColumnReordering(true);
+        signalTable.setStateful(false);
+
+        if (device.getType().equals(DeviceType.QEO_IR)) {
+            irToolbar = new ToolBar();
+            TextButton btnAddIRSignal = new TextButton();
+            btnAddIRSignal.setText("Add IR CMD");
+            btnAddIRSignal.addSelectHandler(new SelectEvent.SelectHandler() {
+                @Override
+                public void onSelect(SelectEvent selectEvent) {
+                    showAddIRSignalDiaglog(device);
+                }
+            });
+
+
+            TextButton btnRemoveIRSignal = new TextButton();
+            btnRemoveIRSignal.setText("Remove IR CMD");
+            btnRemoveIRSignal.addSelectHandler(new SelectEvent.SelectHandler() {
+
+                @Override
+                public void onSelect(SelectEvent selectEvent) {
+                    List<Signal> list = signalTable.getSelectionModel().getSelection();
+                    if (list != null && list.size() > 0) {
+                        for (int i = 0; i < list.size(); i++) {
+                            signalTable.getStore().remove(list.get(i));
+                            //TODO: need to remove the signal from data store
+                        }
+                    }
+                }
+            });
+
+            irToolbar.add(btnAddIRSignal);
+            irToolbar.add(btnRemoveIRSignal);
+
+            deviceDetail.add(irToolbar);
+        }
+
+        deviceDetail.add(signalTable, new VerticalLayoutContainer.VerticalLayoutData(1, 1));
+
+
     }
 
+    private void showAddIRSignalDiaglog(final Device device) {
+
+        final Dialog complex = new Dialog();
+        complex.setBodyBorder(false);
+        complex.setHeadingText("Add new IR CMD...");
+        complex.setWidth(400);
+        complex.setHeight(225);
+        //TODO: need to make this dialog blocking all other interactions
+
+        VerticalLayoutContainer p = new VerticalLayoutContainer();
+
+
+        newIRSignalName = new TextField();
+        newIRSignalName.setAllowBlank(false);
+        newIRSignalName.setEmptyText("Enter IR CMD name...");
+
+
+        newIRSignalValue = new TextField();
+        newIRSignalValue.setAllowBlank(false);
+        newIRSignalValue.setEnabled(false);
+        newIRSignalValue.setEmptyText(PLEASE_RECORD_IR_CMD);
+
+
+        SignalTypeModelProperties stmp = GWT.create(SignalTypeModelProperties.class);
+        ListStore<SignalTypeModel> signalTypeListStore = new ListStore<SignalTypeModel>(stmp.key());
+        SignalType[] types = SignalType.values();
+        for (int i = 0; i < types.length; i++) {
+            SignalTypeModel model = new SignalTypeModel();
+            model.setKey(types[i].name());
+            model.setName(types[i].name());
+            signalTypeListStore.add(model);
+        }
+
+        cmbSignalType = new ComboBox<SignalTypeModel>(signalTypeListStore, stmp.name());
+        cmbSignalType.setTriggerAction(ComboBoxCell.TriggerAction.ALL);
+        cmbSignalType.setForceSelection(true);
+
+
+        ToolBar toolBar = new ToolBar();
+
+        TextButton btnStart = new TextButton();
+        btnStart.setText("Record");
+        btnStart.addSelectHandler(new SelectEvent.SelectHandler() {
+            @Override
+            public void onSelect(SelectEvent selectEvent) {
+                newIRSignalValue.setText("newIRCommand Recorded" + Math.random());
+                //TODO: replace with the actual command recorded from service
+
+            }
+        });
+        toolBar.add(btnStart);
+
+
+        complex.add(p);
+        p.add(toolBar);
+        p.add(new FieldLabel(newIRSignalName, "IR CMD Name"), new VerticalLayoutContainer.VerticalLayoutData(1, -1));
+        p.add(new FieldLabel(cmbSignalType, "IR CMD Type"), new VerticalLayoutContainer.VerticalLayoutData(1, -1));
+        p.add(new FieldLabel(newIRSignalValue, "IR CMD Value"), new VerticalLayoutContainer.VerticalLayoutData(1, -1));
+
+
+        complex.setPredefinedButtons(Dialog.PredefinedButton.OK, Dialog.PredefinedButton.CANCEL);
+        complex.getButtonById(Dialog.PredefinedButton.OK.name()).addSelectHandler(new SelectEvent.SelectHandler() {
+            @Override
+            public void onSelect(SelectEvent selectEvent) {
+                if (addNewIRCMD(device)) {
+                    complex.hide();
+                } else {
+                    AlertMessageBox alertBox = new AlertMessageBox("Alert", "Failed to add new IR CMD");
+                    alertBox.show();
+                }
+
+
+            }
+        });
+
+        complex.getButtonById(Dialog.PredefinedButton.CANCEL.name()).addSelectHandler(new SelectEvent.SelectHandler() {
+            @Override
+            public void onSelect(SelectEvent selectEvent) {
+                complex.hide();
+            }
+        });
+
+        complex.show();
+
+    }
+
+    private boolean addNewIRCMD(Device device) {
+        if (newIRSignalName != null && newIRSignalName.getText() != null && newIRSignalName.getText().length() > 0
+                && newIRSignalValue != null && newIRSignalValue.getText() != null
+                && newIRSignalValue.getText().length() > 0 && !(newIRSignalValue.getText().equals(PLEASE_RECORD_IR_CMD))
+                && cmbSignalType != null && cmbSignalType.getText() != null && cmbSignalType.getText().length() > 0) {
+
+
+            Signal irSignal = new Signal(new Date().getTime(), newIRSignalName.getText()
+                    , newIRSignalValue.getText(), SignalType.valueOf(cmbSignalType.getText()), device);
+
+            signalTable.getStore().add(irSignal);
+
+            return true;
+        }
+        return false;
+    }
+
+
     private void clearDeviceDetail() {
+
 
         if (lblDeviceID != null)
             lblDeviceID.setText("");
@@ -270,11 +499,45 @@ public class DevicesPage implements IsWidget {
 
         if (lblDeviceType != null)
             lblDeviceType.setText("");
+
+        if (lblSignals != null) {
+            lblSignals.setText("");
+        }
+
+        if (irToolbar != null) {
+            irToolbar.removeFromParent();
+        }
+
+        if (signalTable != null) {
+            signalTable.removeFromParent();
+        }
     }
 
 
     class DeviceTypeModel {
         String key;
+        String name;
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    class SignalTypeModel {
+        String key;
+
         String name;
 
         public String getKey() {
