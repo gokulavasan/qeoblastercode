@@ -33,17 +33,17 @@ static void on_receive_cmd (const qeo_event_reader_t *reader,
     /* Whenever a new cmd arrives, print it to stdout and issue the comand to Mock */
     printf("Issuer = %s :: Command = %s\n", msg->from, msg->cmd);
     if (strcmp(msg->cmd, remoteCmdNames[REMOTE_PLAY]) == 0)
-            system ("irsend SEND_ONCE sony KEY_PLAY");
+            system ("irsend SEND_ONCE HECDvD50 KEY_PLAY");
     else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_PAUSE]) == 0)
-            system ("irsend SEND_ONCE sony KEY_PAUSE");
+            system ("irsend SEND_ONCE HECDvD50 KEY_PAUSE");
     else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_PREV]) == 0)
-	    system ("irsend SEND_ONCE sony KEY_PREVIOUS");
+	    system ("irsend SEND_ONCE HECDvD50 KEY_PREVIOUS");
     else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_NEXT]) == 0)
-            system ("irsend SEND_ONCE sony KEY_NEXT");
+            system ("irsend SEND_ONCE HECDvD50 KEY_NEXT");
     else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_POWER]) == 0)
-            system ("irsend SEND_ONCE sony KEY_POWER");
+            system ("irsend SEND_ONCE HECDvD50 KEY_POWER");
     else if (strcmp(msg->cmd, remoteCmdNames[REMOTE_STOP]) == 0)
-	    system ("irsend SEND_ONCE sony KEY_STOP");
+	    system ("irsend SEND_ONCE HECDvD50 KEY_STOP");
     else
 	    printf("Unknown Command at IR-Blaster\n");
 }	
