@@ -13,6 +13,7 @@ std::map<std::string, bool> availRemotes; //Avail Remote Names
 std::map<std::string, bool> validKeyNames; //Valid Remote Key Names
 char currPath[FILENAME_MAX]; //CurrPath
 
+const int PROGRAM_DEFAULT_CONFIG = 1; // 0->no config when switchApp starts, 1->has a initial config when switchApp starts
 const int IR_EVENTS_DEFAULT = 0; //0 -> Read from lircd.conf
 const std::string LIRCDFILE = "/etc/lirc/lircd.conf";
 
@@ -308,16 +309,19 @@ void populateIREvents (Device * dev) {
 }
 
 void populateZigBEvents (Device * dev) {
+  //If you are changing these event names, change the relevant startup mapping in initDevices (if needed)
   dev->addPubEvent ("SWITCHON");
   dev->addPubEvent ("SWITCHOFF"); 
 }
 
 void populateZWaveEvents (Device * dev) {
+  //If you are changing these event names, change the relevant startup mapping in initDevices (if needed)
   dev->addSubEvent ("TURNON");
   dev->addSubEvent ("TURNOFF");
 }
 
 void populateKinnectEvents (Device * dev) {
+  //If you are changing these event names, change the relevant startup mapping in initDevices (if needed)
   dev->addPubEvent ("RIGHTCIRCLE");
   dev->addPubEvent ("LEFTCIRCLE");
 }
@@ -342,6 +346,21 @@ void initDevices() {
   populateZigBEvents (zigB);
   populateZWaveEvents (zWave);
   populateKinnectEvents (kinDev);
+  
+  //Initialize with a default config
+  if (PROGRAM_DEFAULT_CONFIG) {
+     stringstream ss;
+     string dummyString;
+     ss<<"SET_MAP_"<<kinectDevId<<"_E_"<<"LEFTCIRCLE_"<<irBlasterDevId<<"_E_"<<"HECDvD50:KEY_PLAY";
+     processCommand (ss.str(), dummyString, NULL);
+     ss.clear();
+     ss<<"SET_MAP_"<<zigBeeDevId<<"_E_"<<"SWITCHON_"<<zWaveDevId<<"_E_"<<"TURNON";
+     processCommand (ss.str(), dummyString, NULL);
+     ss.clear();
+     ss<<"SET_MAP_"<<zigBeeDevId<<"_E_"<<"SWITCHOFF_"<<zWaveDevId<<"_E_"<<"TURNOFF";
+     processCommand (ss.str(), dummyString, NULL);
+     ss.clear();
+  }
 }
 
 void sendCmdToZigBee (std::string cmd) {
