@@ -4,6 +4,6 @@
 int fire_xbee_signal(char* signal);
 int connect_xbee();
 int disconnect_xbee();
-int get_xbee_signal();
+int get_xbee_signal(char* signal, int len);
 
 #endif

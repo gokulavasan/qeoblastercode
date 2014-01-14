@@ -1,11 +1,12 @@
-PLATFORM = i686-linux
+PLATFORM = arm-linux-gnueabihf
+ 
 CPP = g++
 CC = gcc
 
 TARGET = switchApp
 LIBDIR = $(QEO_HOME)/c/lib/$(PLATFORM)
-LIBS = -lqeo -lqeoutil -lrt -lpthread -lboost_regex -lboost_thread -lexpect -ltcl8.5 -lboost_system
-CFLAGS = -g -m32 -Wall -std=c++0x -I$(QEO_HOME)/c/include -I/usr/local/include
+LIBS = -L/opt/lib -lqeo -lqeoutil -lrt -lpthread -lboost_regex -lboost_thread -lexpect -ltcl8.5 -lboost_system -lqeoxbee
+CFLAGS = -g -Wall -std=c++0x -I$(QEO_HOME)/c/include -I/usr/local/include -I../qeoxbee/include
 
 ifeq ($(QEO_HOME),)
 $(error QEO_HOME is not defined)

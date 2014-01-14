@@ -1,10 +1,10 @@
-PLATFORM = i686-linux
+PLATFORM = arm-linux-gnueabihf 
 CC = gcc
 
 TARGET = qeoirblaster
 LIBDIR = $(QEO_HOME)/c/lib/$(PLATFORM)
 LIBS = -lqeo -lqeoutil -lrt -lpthread
-CFLAGS = -m32 -g -Wall  -I$(QEO_HOME)/c/include
+CFLAGS = -g -Wall  -I$(QEO_HOME)/c/include
 
 ifeq ($(QEO_HOME),)
 $(error QEO_HOME is not defined)
@@ -22,7 +22,7 @@ HEADERS = $(wildcard *.h)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJECTS)
-	$(CC) -pthread -m32 -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) $(OBJECTS) -Wall $(LIBS) -o $@
+	$(CC) -pthread -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) $(OBJECTS) -Wall $(LIBS) -o $@
 	@echo "$(TARGET) created."
 
 clean:

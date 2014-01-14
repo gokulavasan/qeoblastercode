@@ -1,7 +1,7 @@
 TARGET = xbeetest
 CC = gcc
-CFLAGS = -pedantic -Wall -I../include -I../../libxbee.libxbee-v3/
-LDFLAGS = -L/opt/lib -lqeoxbee -lxbee -lpthread -lrt
+CFLAGS = -pedantic -Wall -I../include 
+LDFLAGS = -L/opt/lib -lqeoxbee -lpthread -lrt
 
 SOURCES = xbeetest.c
 HEADERS = ../include

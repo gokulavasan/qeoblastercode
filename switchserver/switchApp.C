@@ -1,5 +1,9 @@
 #include "switchApp.h"
 
+extern "C" {
+#include "qeoxbeelib.h"
+}
+
 using boost::asio::ip::tcp;
 
 std::mutex vLock; //Lock for reading/manipulating allMap
@@ -418,7 +422,7 @@ static void on_kinect_event (const qeo_event_reader_t * reader, const void * dat
   //Cast into kinectCmd qeo struct and then get the event details
   //Look up the allMap config and issue the command to the device by looking up devIdMap!
   org_qeo_qeoblaster_qeoir_IRCommand_t *msg = (org_qeo_qeoblaster_qeoir_IRCommand_t *)data;
-  printf("Kinnect Channel : %s sent Command = %s\n", msg->from, msg->cmd);
+  printf("Kinect Channel : %s sent Command = %s\n", msg->from, msg->cmd);
   std::string kCmd(msg->cmd);
   deviceEvent(kCmd, kinectDevId);
 }
@@ -440,13 +444,25 @@ void qeoLoop() {
 }
 
 void zigBeeComm() {
+  int ret = connect_xbee();
+  if(ret != 0) {
+    printf("got error connecting to the xbee: %i\n", ret);
+    return;
+  }
+  char signal[255];
   while (1) {
     //Blocking Read -- If ZigBee is sending commands - if we get commands
     //lookup the config map and then act accordingly
-    std::string cmd = "SWITCHOFF"; //TODO : Replace with a blocking read call here!
-    while(1) {
-      boost::this_thread::sleep(boost::posix_time::seconds(5));
+    ret = get_xbee_signal(signal, 255);
+    if(ret != 0) {
+      printf("got error receiving signal from xbee: %1\n", ret);
+      return;
     }
+    printf("got xbee command %s\r\n", signal);
+    std::string cmd = signal; 
+    //while(1) {
+    //  boost::this_thread::sleep(boost::posix_time::seconds(5));
+    //}
     std::cout << "SwitchApp : Received " << cmd <<" command from zigBee " << std::endl;
     deviceEvent (cmd, zigBeeDevId);
   }
