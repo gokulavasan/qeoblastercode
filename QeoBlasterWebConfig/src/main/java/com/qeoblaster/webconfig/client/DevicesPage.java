@@ -9,21 +9,13 @@ import com.google.gwt.user.client.ui.IsWidget;
 
 import com.google.gwt.user.client.ui.Widget;
 import com.google.gwt.user.client.ui.Label;
-import com.sencha.gxt.cell.core.client.TextButtonCell;
 import com.sencha.gxt.cell.core.client.form.ComboBoxCell;
 import com.sencha.gxt.core.client.Style;
-import com.sencha.gxt.core.client.ValueProvider;
-import com.sencha.gxt.data.shared.LabelProvider;
 import com.sencha.gxt.data.shared.ListStore;
-import com.sencha.gxt.data.shared.ModelKeyProvider;
-import com.sencha.gxt.data.shared.PropertyAccess;
-import com.sencha.gxt.state.client.GridStateHandler;
-import com.sencha.gxt.widget.core.client.ContentPanel;
 import com.sencha.gxt.widget.core.client.Dialog;
 import com.sencha.gxt.widget.core.client.ListView;
 
 import com.sencha.gxt.widget.core.client.box.AlertMessageBox;
-import com.sencha.gxt.widget.core.client.button.ToolButton;
 import com.sencha.gxt.widget.core.client.container.VerticalLayoutContainer;
 import com.sencha.gxt.widget.core.client.button.TextButton;
 import com.sencha.gxt.widget.core.client.event.SelectEvent;
@@ -41,8 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-
-import static com.google.gwt.editor.client.Editor.Path;
 
 /**
  * Created by christopher on 12/28/13.
@@ -83,55 +73,6 @@ public class DevicesPage implements IsWidget {
 
     private static DevicesPage instance = null;
 
-    interface DeviceProperties extends PropertyAccess<Device> {
-        @Path("deviceID")
-        ModelKeyProvider<Device> key();
-
-        @Path("deviceName")
-        ValueProvider<Device, String> name();
-
-        @Path("type")
-        ValueProvider<Device, DeviceType> type();
-    }
-
-    interface DeviceTypeModelProperties extends PropertyAccess<DeviceTypeModel> {
-        @Path("key")
-        ModelKeyProvider<DeviceTypeModel> key();
-
-        @Path("name")
-        LabelProvider<DeviceTypeModel> name();
-
-    }
-
-    interface SignalTypeModelProperties extends PropertyAccess<SignalTypeModel> {
-        @Path("key")
-        ModelKeyProvider<SignalTypeModel> key();
-
-        @Path("name")
-        LabelProvider<SignalTypeModel> name();
-
-    }
-
-
-    interface SignalProperties extends PropertyAccess<Signal> {
-        @Path("id")
-        ModelKeyProvider<Signal> id();
-
-
-        @Path("value")
-        ValueProvider<Signal, String> value();
-
-
-        @Path("name")
-        ValueProvider<Signal, String> names();
-
-        @Path("type")
-        ValueProvider<Signal, SignalType> signalType();
-
-        @Path("owner")
-        ValueProvider<Signal, Device> owner();
-
-    }
 
     interface DevicesPageUiBinder extends UiBinder<Widget, DevicesPage> {
     }
@@ -513,48 +454,5 @@ public class DevicesPage implements IsWidget {
         }
     }
 
-
-    class DeviceTypeModel {
-        String key;
-        String name;
-
-        public String getKey() {
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
-
-    class SignalTypeModel {
-        String key;
-
-        String name;
-
-        public String getKey() {
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
 
 }
