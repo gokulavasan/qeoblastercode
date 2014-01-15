@@ -1,14 +1,16 @@
-package com.qeoblaster.webconfig.client;
+package com.qeoblaster.webconfig.server;
+
+import com.google.gwt.user.server.rpc.RemoteServiceServlet;
+import com.qeoblaster.webconfig.client.*;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 /**
- * Created by chenc52 on 12/31/13.
+ * Created by christopher on 1/14/14.
  */
-public class TestData {
-
+public class WebConfigServiceTestImpl extends RemoteServiceServlet implements WebConfigService {
 
     public static Device DEVICE1 = new Device("001", "Qeo Blaster Kinect", DeviceType.QEO_IR, null);
     public static Device DEVICE2 = new Device("002", "ZWave light bulb", DeviceType.ZWAVE, null);
@@ -63,5 +65,13 @@ public class TestData {
         DEVICE3.setSupportedSignal(Arrays.asList(OTHER_SIGNALS));
         DEVICE4.setSupportedSignal(Arrays.asList(QEO_SIGNALS));
     }
-}
 
+    @Override
+    public ServerData getServerData() {
+        ServerData ret = new ServerData();
+        ret.signals = Arrays.asList(SIGNALS);
+        ret.devices = Arrays.asList(DEVICES);
+        ret.triggers = Arrays.asList(TRIGGERS);
+        return ret;
+    }
+}

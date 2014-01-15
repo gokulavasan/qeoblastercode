@@ -219,7 +219,7 @@ public class DevicesPage implements IsWidget {
                 }
             }
         });
-        registeredDevices.getStore().addAll(Arrays.asList(TestData.DEVICES));
+        registeredDevices.getStore().addAll(ServerData.data.devices);
         registeredDevices.setBorders(false);
         registeredDeviceListView.add(registeredDevices);
     }

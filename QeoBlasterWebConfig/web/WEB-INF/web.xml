@@ -5,4 +5,12 @@
 		  http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
            version="2.5">
 
+    <servlet>
+        <servlet-name>com.qeoblaster.webconfig.WebConfig WebConfigService</servlet-name>
+        <servlet-class>com.qeoblaster.webconfig.server.WebConfigServiceTestImpl</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>com.qeoblaster.webconfig.WebConfig WebConfigService</servlet-name>
+        <url-pattern>/com.qeoblaster.webconfig.WebConfig/WebConfigService</url-pattern>
+    </servlet-mapping>
 </web-app>

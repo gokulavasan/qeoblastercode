@@ -1,9 +1,11 @@
 package com.qeoblaster.webconfig.client;
 
+import java.io.Serializable;
+
 /**
  * Created by chenc52 on 1/13/14.
  */
-public class Trigger {
+public class Trigger implements Serializable {
 
     private long id;
     private Signal inputSignal;
@@ -13,6 +15,8 @@ public class Trigger {
     private String outputSignalName;
     private String outputSignalValue;
 
+
+    public Trigger() {}
 
     public Trigger(long id, Signal inputSignal, Signal outputSignal) {
         this.id = id;

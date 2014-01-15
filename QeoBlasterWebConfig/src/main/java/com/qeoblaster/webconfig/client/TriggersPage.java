@@ -129,8 +129,8 @@ public class TriggersPage implements IsWidget {
 
         cm = new ColumnModel<Trigger>(l);
         store = new ListStore<Trigger>(props.id());
-        //TODO: replace with loading from real data source
-        store.addAll(Arrays.asList(TestData.TRIGGERS));
+
+        store.addAll(ServerData.data.triggers);
 
         grid = new Grid<Trigger>(store, cm);
         grid.getView().setAutoExpandColumn(inputCmdName);
@@ -184,7 +184,7 @@ public class TriggersPage implements IsWidget {
         //create device list store
         DeviceProperties deviceProps = GWT.create(DeviceProperties.class);
         ListStore<Device> deviceStore = new ListStore<Device>(deviceProps.key());
-        deviceStore.addAll(Arrays.asList(TestData.DEVICES));
+        deviceStore.addAll(ServerData.data.devices);
 
         SignalProperties inputSignalProps = GWT.create(SignalProperties.class);
         final ListStore<Signal> inputSignalStore = new ListStore<Signal>(inputSignalProps.id());
@@ -213,11 +213,11 @@ public class TriggersPage implements IsWidget {
             public void onSelection(SelectionEvent<Device> deviceSelectionEvent) {
                 if (inputDevice.getText() != null && inputDevice.getText().length() > 0) {
                     inputSignal.getStore().clear();
-                    for (int i = 0; i < TestData.SIGNALS.length; i++) {
-                        if (inputDevice.getCurrentValue().getDeviceID().equals(TestData.SIGNALS[i].getOwner().getDeviceID())) {
+                    for(Signal signal : SignalsData.get().getSignals()) {
+                    //for (int i = 0; i < SignalsData.get().getSignals().size(); i++) {
+                        if (inputDevice.getCurrentValue().getDeviceID().equals(signal.getOwner().getDeviceID())) {
 //                                && TestData.SIGNALS[i].getType().equals(SignalType.INPUT_MSG)) {
-
-                            inputSignal.getStore().add(TestData.SIGNALS[i]);
+                            inputSignal.getStore().add(signal);
                         }
                     }
 
@@ -245,9 +245,9 @@ public class TriggersPage implements IsWidget {
             public void onSelection(SelectionEvent<Device> deviceSelectionEvent) {
                 if (outputDevice.getText() != null && outputDevice.getText().length() > 0) {
                     outputSignalStore.clear();
-                    for (int i = 0; i < TestData.SIGNALS.length; i++) {
-                        if (outputDevice.getCurrentValue().getDeviceID().equals(TestData.SIGNALS[i].getOwner().getDeviceID())) {
-                            outputSignal.getStore().add(TestData.SIGNALS[i]);
+                    for(Signal signal : SignalsData.get().getSignals()) {
+                        if (outputDevice.getCurrentValue().getDeviceID().equals(signal.getOwner().getDeviceID())) {
+                            outputSignal.getStore().add(signal);
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 package com.qeoblaster.webconfig.client;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import java.util.List;
 /**
  * Created by chenc52 on 12/31/13.
  */
-public class Device {
+public class Device implements Serializable {
     private String deviceID;
     private String deviceName;
     private DeviceType type;
@@ -21,9 +22,7 @@ public class Device {
         this.deviceID = deviceID;
         this.deviceName = deviceName;
         this.type = type;
-        if (signals != null && signals.size() >0) {
-            supportedSignal= Arrays.asList(TestData.ZWAVE_SIGNALS);
-        }
+        setSupportedSignal(signals);
     }
 
     public String getDeviceID() {
@@ -57,5 +56,10 @@ public class Device {
 
     public void setSupportedSignal(List<Signal> supportedSignal) {
         this.supportedSignal = supportedSignal;
+        if(supportedSignal != null) {
+            for(Signal signal : supportedSignal) {
+                signal.setOwner(this);
+            }
+        }
     }
 }

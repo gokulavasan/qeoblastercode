@@ -1,9 +1,11 @@
 package com.qeoblaster.webconfig.client;
 
+import java.io.Serializable;
+
 /**
  * Created by chenc52 on 12/31/13.
  */
-public class Signal {
+public class Signal implements Serializable {
     private long id;
     private String name;
     private String value;
