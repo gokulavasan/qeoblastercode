@@ -12,10 +12,10 @@ import java.util.List;
  */
 public class WebConfigServiceTestImpl extends RemoteServiceServlet implements WebConfigService {
 
-    public static Device DEVICE1 = new Device("001", "Qeo Blaster Kinect", DeviceType.QEO_IR, null);
-    public static Device DEVICE2 = new Device("002", "ZWave light bulb", DeviceType.ZWAVE, null);
-    public static Device DEVICE3 = new Device("003", "Other Device", DeviceType.OTHER, null);
-    public static Device DEVICE4 = new Device("004", "Standard Qeo Device", DeviceType.QEO, null);
+    public static Device DEVICE1 = new Device(1, "Qeo Blaster Kinect", DeviceType.IR, null);
+    public static Device DEVICE2 = new Device(2, "ZWave light bulb", DeviceType.ZWAVE, null);
+    public static Device DEVICE3 = new Device(3, "ZigBee Switch", DeviceType.ZIGBEE, null);
+    public static Device DEVICE4 = new Device(4, "Standard Qeo Device", DeviceType.QEO, null);
 
     public static final Device[] DEVICES = new Device[]{
             DEVICE1, DEVICE2, DEVICE3, DEVICE4

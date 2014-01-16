@@ -1,6 +1,10 @@
 package com.qeoblaster.webconfig.client;
 
+import com.google.gwt.regexp.shared.RegExp;
+import com.google.gwt.regexp.shared.SplitResult;
+
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by chenc52 on 1/13/14.
@@ -10,13 +14,39 @@ public class Trigger implements Serializable {
     private long id;
     private Signal inputSignal;
     private Signal outputSignal;
-    private String inputSignalName;
-    private String inputSignalValue;
-    private String outputSignalName;
-    private String outputSignalValue;
 
+    private static long last_id = 0;
 
     public Trigger() {}
+
+    public Trigger(String data, List<Device> devices) {
+        RegExp reg = RegExp.compile("_");
+        SplitResult res = reg.split(data);
+
+        int inputDeviceId = Integer.valueOf(res.get(0));
+        String inputSignalName = res.get(2);
+        int outputDeviceId = Integer.valueOf(res.get(3));
+        String outputSignalName = res.get(5);
+        for(Device device : devices) {
+            if(device.getDeviceID() == inputDeviceId) {
+                for(Signal signal : device.getSupportedSignal()) {
+                    if(signal.getType() == SignalType.OUTPUT_MSG && signal.getName().equals(inputSignalName)) {
+                        inputSignal = signal;
+                        break;
+                    }
+                }
+            } else if(device.getDeviceID() == outputDeviceId) {
+                for(Signal signal : device.getSupportedSignal()) {
+                    if(signal.getType() == SignalType.INPUT_MSG && signal.getName().equals(outputSignalName)) {
+                        outputSignal = signal;
+                        break;
+                    }
+                }
+            }
+
+        }
+        id = last_id++;
+    }
 
     public Trigger(long id, Signal inputSignal, Signal outputSignal) {
         this.id = id;
@@ -49,50 +79,36 @@ public class Trigger implements Serializable {
     }
 
     public String getInputSignalName() {
-        if (inputSignal == null) {
+        if(inputSignal == null) {
             return "";
         }
         return inputSignal.getName();
     }
 
     public void setInputSignalName(String inputSignalName) {
-        if (inputSignal != null)
-            inputSignal.setName(inputSignalName);
-    }
-
-    public String getInputSignalValue() {
-        if (inputSignal == null) {
-            return "";
-        }
-        return inputSignal.getValue();
-    }
-
-    public void setInputSignalValue(String inputSignalValue) {
-        if (inputSignal != null)
-            inputSignal.setValue(inputSignalValue);
     }
 
     public String getOutputSignalName() {
-        if (outputSignal == null) {
+        if(outputSignal == null) {
             return "";
         }
         return outputSignal.getName();
     }
 
     public void setOutputSignalName(String outputSignalName) {
-        if (outputSignal != null)
-            outputSignal.setName(outputSignalName);
+    }
+
+    public String getInputSignalValue() {
+        return "";
+    }
+
+    public void setInputSignalValue(String inputSignalValue) {
     }
 
     public String getOutputSignalValue() {
-        if (outputSignal == null) {
-            return "";
-        }
-        return outputSignal.getValue();
+        return "";
     }
 
     public void setOutputSignalValue(String outputSignalValue) {
-        if (outputSignal != null)
-            outputSignal.setValue(outputSignalValue);
     }
 }

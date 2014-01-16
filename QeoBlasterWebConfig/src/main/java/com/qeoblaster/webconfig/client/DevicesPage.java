@@ -184,7 +184,7 @@ public class DevicesPage implements IsWidget {
         if (newDeviceName.getText() != null && newDeviceName.getText().length() > 0
                 && cmbDeviceType.getText() != null && cmbDeviceType.getText().length() > 0) {
             Device newDevice = new Device();
-            newDevice.setDeviceID(new Date().getTime() + "");
+            newDevice.setDeviceID((long)(Math.random() * Long.MAX_VALUE));
             newDevice.setDeviceName(newDeviceName.getText());
             newDevice.setType(DeviceType.valueOf(cmbDeviceType.getText()));
 
@@ -286,7 +286,7 @@ public class DevicesPage implements IsWidget {
         signalTable.setColumnReordering(true);
         signalTable.setStateful(false);
 
-        if (device.getType().equals(DeviceType.QEO_IR)) {
+        if (device.getType().equals(DeviceType.IR)) {
             irToolbar = new ToolBar();
             TextButton btnAddIRSignal = new TextButton();
             btnAddIRSignal.setText("Add IR CMD");

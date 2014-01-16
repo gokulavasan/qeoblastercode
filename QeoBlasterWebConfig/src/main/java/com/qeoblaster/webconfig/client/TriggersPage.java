@@ -215,7 +215,7 @@ public class TriggersPage implements IsWidget {
                     inputSignal.getStore().clear();
                     for(Signal signal : SignalsData.get().getSignals()) {
                     //for (int i = 0; i < SignalsData.get().getSignals().size(); i++) {
-                        if (inputDevice.getCurrentValue().getDeviceID().equals(signal.getOwner().getDeviceID())) {
+                        if (inputDevice.getCurrentValue().getDeviceID() == signal.getOwner().getDeviceID()) {
 //                                && TestData.SIGNALS[i].getType().equals(SignalType.INPUT_MSG)) {
                             inputSignal.getStore().add(signal);
                         }
@@ -246,7 +246,7 @@ public class TriggersPage implements IsWidget {
                 if (outputDevice.getText() != null && outputDevice.getText().length() > 0) {
                     outputSignalStore.clear();
                     for(Signal signal : SignalsData.get().getSignals()) {
-                        if (outputDevice.getCurrentValue().getDeviceID().equals(signal.getOwner().getDeviceID())) {
+                        if (outputDevice.getCurrentValue().getDeviceID() == signal.getOwner().getDeviceID()) {
                             outputSignal.getStore().add(signal);
                         }
                     }

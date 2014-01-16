@@ -14,51 +14,50 @@ public class FakeServer {
         for(;;) {
             try {
                 ServerSocket serverSocket = new ServerSocket(8113);
+                Socket socket = serverSocket.accept();
+                System.out.println("Got Connection");
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(socket.getInputStream()));
+                out.println("SwitchAppReady");
+                String resp = in.readLine();
+                System.out.println("Got Response : " + resp);
                 for(;;) {
-                    Socket socket = serverSocket.accept();
-                    System.out.println("Got Connection");
-                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                    BufferedReader in = new BufferedReader(
-                            new InputStreamReader(socket.getInputStream()));
-                    out.println("SwitchAppReady");
-                    String resp = in.readLine();
-                    System.out.println("Got Response : " + resp);
-
                     String cmd = in.readLine();
                     System.out.println("Got cmd: " + cmd);
-                    if(cmd == "GET_NUM_DEVICES") {
+                    if(cmd.equals("GET_NUM_DEVICES")) {
                         out.println("4");
-                    } else if(cmd == "GET_DEVICE_IDS") {
+                    } else if(cmd.equals("GET_DEVICE_IDS")) {
                         out.println("1_2_3_4");
                     } else if(cmd.startsWith("GET_DEVICE_INFO_")) {
                         if(cmd.endsWith("1")) {
-                            String r = "Qeo Blaster Kinect_EP_SP_ES_SS_";
+                            String r = "Qeo Blaster Kinect_EP_LEFTCIRCLE:RIGHTCIRCLE_SP_ES_SS_";
                             out.println(r);
                         } else if(cmd.endsWith("2")) {
-                            String r = "ZWave light Bulb_EP_SP_ES_SS_";
+                            String r = "ZWave light Bulb_EP_SP_ES_ON:OFF_SS_";
                             out.println(r);
                         } else if(cmd.endsWith("3")) {
-                            String r = "Other Device_EP_SP_ES_SS_";
+                            String r = "ZigBee Switch_EP_DOWN:UP_SP_ES_SS_";
                             out.println(r);
                         } else if(cmd.endsWith("4")) {
-                            String r = "Standard Qeo Device_EP_SP_ES_SS_";
+                            String r = "DVD Player IR_EP_SP_ES_PLAY:PAUSE_SS_";
                             out.println(r);
                         }
                     } else if(cmd.startsWith("SET_MAP_")) {
 
                     } else if(cmd.startsWith("SET_UNMAP_")) {
 
-                    } else if(cmd == "GET_ALL_MAP") {
+                    } else if(cmd.equals("GET_ALL_MAP")) {
                         StringBuilder r = new StringBuilder();
-                        r.append("1_E_Button Down_2_E_LightOn");
+                        r.append("3_E_DOWN_2_E_ON");
                         r.append(",");
-                        r.append("1_E_Button Up_2_E_LightOff");
+                        r.append("3_E_UP_2_E_OFF");
                         r.append(",");
-                        r.append("3_E_Leftcircle_2_E_LightOn");
+                        r.append("1_E_LEFTCIRCLE_4_E_PLAY");
                         r.append(",");
-                        r.append("3_E_Rightcircle_2_E_LightOff");
+                        r.append("1_E_RIGHTCIRCLE_4_E_PAUSE");
                         out.println(r.toString());
-                    } else if(cmd == "END_CONVERSATION") {
+                    } else if(cmd.equals("END_CONVERSATION")) {
                         break;
                     }
                 }
