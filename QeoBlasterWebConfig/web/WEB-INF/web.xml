@@ -7,7 +7,8 @@
 
     <servlet>
         <servlet-name>com.qeoblaster.webconfig.WebConfig WebConfigService</servlet-name>
-        <servlet-class>com.qeoblaster.webconfig.server.WebConfigServiceTestImpl</servlet-class>
+        <!--<servlet-class>com.qeoblaster.webconfig.server.WebConfigServiceTestImpl</servlet-class>-->
+        <servlet-class>com.qeoblaster.webconfig.server.WebConfigServiceImpl</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>com.qeoblaster.webconfig.WebConfig WebConfigService</servlet-name>
