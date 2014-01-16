@@ -20,4 +20,5 @@ QeoBlasterWebConfig/target
 QeoBlasterWebConfig/out
 QeoBlasterWebConfig/.idea
 QeoBlasterWebConfig/classes
+QeoBlasterWebConfig/*.iml
 ipch
