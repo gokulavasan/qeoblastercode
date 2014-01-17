@@ -327,7 +327,7 @@ void populateKinnectEvents (Device * dev) {
 }
 
 void initDevices() {
-  Device * irB = new Device("irBlaster");
+  Device * irB = new Device("DVD Player IR");
   Device * zigB = new Device ("ZigBee");
   Device * zWave = new Device("ZWave");
   Device * kinDev = new Device("Kinect");
