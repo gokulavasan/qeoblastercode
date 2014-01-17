@@ -67,78 +67,62 @@ public class Device implements Serializable {
             }
             switch(mode) {
                 case EP:
-                    parseEP(val);
+                    addEP(val);
                     break;
                 case SP:
-                    parseSP(val);
+                    addSP(val);
                     break;
                 case ES:
-                    parseES(val);
+                    addES(val);
                     break;
                 case SS:
-                    parseSS(val);
+                    addSS(val);
                     break;
             }
         }
     }
 
-    private void parseEP(String val) {
-        RegExp reg = RegExp.compile(":");
-        SplitResult publishedEvents = reg.split(val);
-        System.out.println("EP: " + val);
-        for(int i = 0; i < publishedEvents.length(); i++) {
-            String signalName = publishedEvents.get(i);
-            Signal signal = new Signal();
-            signal.setOwner(this);
-            signal.setType(SignalType.OUTPUT_MSG);
-            signal.setName(signalName);
-            signal.setId(lastSignalId++);
-            supportedSignal.add(signal);
-        }
+    private void addEP(String val) {
+        String signalName = val;
+        Signal signal = new Signal();
+        signal.setOwner(this);
+        signal.setType(SignalType.OUTPUT_MSG);
+        RegExp replaceAmp = RegExp.compile("&");
+        signal.setName(replaceAmp.replace(signalName, "_"));
+        signal.setId(lastSignalId++);
+        supportedSignal.add(signal);
     }
 
-    private void parseSP(String val) {
-        RegExp reg = RegExp.compile(":");
-        SplitResult publishedEvents = reg.split(val);
-        System.out.println("SP: " + val);
-        for(int i = 0; i < publishedEvents.length(); i++) {
-            String signalName = publishedEvents.get(i);
-            Signal signal = new Signal();
-            signal.setOwner(this);
-            signal.setType(SignalType.STATE);
-            signal.setName(signalName);
-            signal.setId(lastSignalId++);
-            supportedSignal.add(signal);
-        }
+    private void addSP(String val) {
+        String signalName = val;
+        Signal signal = new Signal();
+        signal.setOwner(this);
+        signal.setType(SignalType.STATE);
+        RegExp replaceAmp = RegExp.compile("&");
+        signal.setName(replaceAmp.replace(signalName, "_"));
+        signal.setId(lastSignalId++);
+        supportedSignal.add(signal);
     }
 
-    private void parseES(String val) {
-        RegExp reg = RegExp.compile(":");
-        SplitResult publishedEvents = reg.split(val);
-        System.out.println("ES: " + val);
-        for(int i = 0; i < publishedEvents.length(); i++) {
-            String signalName = publishedEvents.get(i);
-            Signal signal = new Signal();
-            signal.setOwner(this);
-            signal.setType(SignalType.INPUT_MSG);
-            signal.setName(signalName);
-            signal.setId(lastSignalId++);
-            supportedSignal.add(signal);
-        }
+    private void addES(String val) {
+        String signalName = val;
+        Signal signal = new Signal();
+        signal.setOwner(this);
+        signal.setType(SignalType.INPUT_MSG);
+        RegExp replaceAmp = RegExp.compile("&");
+        signal.setName(replaceAmp.replace(signalName, "_"));
+        signal.setId(lastSignalId++);
+        supportedSignal.add(signal);
     }
-    private void parseSS(String val) {
-        RegExp reg = RegExp.compile(":");
-        SplitResult publishedEvents = reg.split(val);
-        System.out.println("SS: " + val);
-        for(int i = 0; i < publishedEvents.length(); i++) {
-            String signalName = publishedEvents.get(i);
-            Signal signal = new Signal();
-            signal.setOwner(this);
-            signal.setType(SignalType.STATE);
-            signal.setName(signalName);
-            signal.setId(lastSignalId++);
-            supportedSignal.add(signal);
-        }
+    private void addSS(String val) {
+        String signalName = val;
+        Signal signal = new Signal();
+        signal.setOwner(this);
+        signal.setType(SignalType.STATE);
+        RegExp replaceAmp = RegExp.compile("&");
+        signal.setName(replaceAmp.replace(signalName, "_"));
+        signal.setId(lastSignalId++);
+        supportedSignal.add(signal);
     }
 
     public Device(long deviceID, String deviceName, DeviceType type, List<Signal> signals) {

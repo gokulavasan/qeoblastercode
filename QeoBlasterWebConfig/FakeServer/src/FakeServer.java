@@ -11,13 +11,17 @@ public class FakeServer {
     static public void main(String[] args) {
         System.out.println("FakeServer 2.0");
 
+        ServerSocket serverSocket = null;
+        Socket socket = null;
+        BufferedReader in = null;
+        PrintWriter out = null;
         for(;;) {
             try {
-                ServerSocket serverSocket = new ServerSocket(8113);
-                Socket socket = serverSocket.accept();
+                serverSocket = new ServerSocket(8113);
+                socket = serverSocket.accept();
                 System.out.println("Got Connection");
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(
+                out = new PrintWriter(socket.getOutputStream(), true);
+                in = new BufferedReader(
                         new InputStreamReader(socket.getInputStream()));
                 out.println("SwitchAppReady");
                 String resp = in.readLine();
@@ -28,19 +32,19 @@ public class FakeServer {
                     if(cmd.equals("GET_NUM_DEVICES")) {
                         out.println("4");
                     } else if(cmd.equals("GET_DEVICE_IDS")) {
-                        out.println("1_2_3_4");
+                        out.println("0_1_2_3");
                     } else if(cmd.startsWith("GET_DEVICE_INFO_")) {
-                        if(cmd.endsWith("1")) {
-                            String r = "Qeo Blaster Kinect_EP_LEFTCIRCLE:RIGHTCIRCLE_SP_ES_SS_";
+                        if(cmd.endsWith("0")) {
+                            String r = "DVD Player IR_ES_HECDvD50:KEY&PLAY_ES_HECDvD50:KEY&PAUSE_";
+                            out.println(r);
+                        } else if(cmd.endsWith("1")) {
+                            String r = "ZigBee Switch_EP_SWITCHON_EP_SWITCHOFF_";
                             out.println(r);
                         } else if(cmd.endsWith("2")) {
-                            String r = "ZWave light Bulb_EP_SP_ES_ON:OFF_SS_";
+                            String r = "ZWave light Bulb_ES_TURNON_ES_TURNOFF_";
                             out.println(r);
                         } else if(cmd.endsWith("3")) {
-                            String r = "ZigBee Switch_EP_DOWN:UP_SP_ES_SS_";
-                            out.println(r);
-                        } else if(cmd.endsWith("4")) {
-                            String r = "DVD Player IR_EP_SP_ES_PLAY:PAUSE_SS_";
+                            String r = "Qeo Blaster Kinect_EP_LEFTCIRCLE_EP_RIGHTCIRCLE_";
                             out.println(r);
                         }
                     } else if(cmd.startsWith("SET_MAP_")) {
@@ -49,13 +53,11 @@ public class FakeServer {
 
                     } else if(cmd.equals("GET_ALL_MAP")) {
                         StringBuilder r = new StringBuilder();
-                        r.append("3_E_DOWN_2_E_ON");
+                        r.append("3_E_LEFTCIRCLE_0_E_HECDvD50:KEY&PLAY");
                         r.append(",");
-                        r.append("3_E_UP_2_E_OFF");
+                        r.append("1_E_SWITCHON_2_E_TURNON");
                         r.append(",");
-                        r.append("1_E_LEFTCIRCLE_4_E_PLAY");
-                        r.append(",");
-                        r.append("1_E_RIGHTCIRCLE_4_E_PAUSE");
+                        r.append("1_E_SWITCHOFF_2_E_TURNOFF");
                         out.println(r.toString());
                     } else if(cmd.equals("END_CONVERSATION")) {
                         break;
@@ -65,6 +67,31 @@ public class FakeServer {
                 e.printStackTrace();
             } catch(IOException e) {
                 e.printStackTrace();
+            } finally {
+                if(in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(out != null) {
+                    out.close();
+                }
+                if(socket != null) {
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(serverSocket != null) {
+                    try {
+                        serverSocket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
     }

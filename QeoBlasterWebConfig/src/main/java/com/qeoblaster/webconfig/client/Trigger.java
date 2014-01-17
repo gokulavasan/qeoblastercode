@@ -24,9 +24,10 @@ public class Trigger implements Serializable {
         SplitResult res = reg.split(data);
 
         int inputDeviceId = Integer.valueOf(res.get(0));
-        String inputSignalName = res.get(2);
+        RegExp convertAmp = RegExp.compile("&");
+        String inputSignalName = convertAmp.replace(res.get(2), "_");
         int outputDeviceId = Integer.valueOf(res.get(3));
-        String outputSignalName = res.get(5);
+        String outputSignalName = convertAmp.replace(res.get(5), "_");
         for(Device device : devices) {
             if(device.getDeviceID() == inputDeviceId) {
                 for(Signal signal : device.getSupportedSignal()) {
