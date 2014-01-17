@@ -297,8 +297,8 @@ void addValidKeyWords (std::map<std::string, bool> &validKeys) {
 
 void populateIREvents (Device * dev) {
   if (IR_EVENTS_DEFAULT) { //Populate it with default commands
-    dev->addSubEvent("SONYNEW:KEY_PLAY");
-    dev->addSubEvent("SONYNEW:KEY_PAUSE");
+    dev->addSubEvent("HECDvD50:KEY_PLAY");
+    dev->addSubEvent("HECDvD50:KEY_PAUSE");
   } else { //Read the .conf file and populate the commands
     std::vector<std::string> commands;
     addValidKeyWords(validKeyNames);
@@ -328,9 +328,9 @@ void populateKinnectEvents (Device * dev) {
 
 void initDevices() {
   Device * irB = new Device("DVD Player IR");
-  Device * zigB = new Device ("ZigBee");
-  Device * zWave = new Device("ZWave");
-  Device * kinDev = new Device("Kinect");
+  Device * zigB = new Device ("ZigBee Switch");
+  Device * zWave = new Device("ZWave light Bulb");
+  Device * kinDev = new Device("Qeo Blaster Kinect");
   
   irBlasterDevId = irB->getDeviceId();
   zigBeeDevId = zigB->getDeviceId(); 
