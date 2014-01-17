@@ -85,10 +85,10 @@ int processCommand (std::string cmd, std::string &nextSendMsg, tcp::socket& sock
     if (boost::regex_match(cmd.c_str(), cm, re)) {
       std::string sId(cm[1].first, cm[1].second); //source devId
       std::string sES(cm[2].first, cm[2].second); //source event/state
-      std::string sName(cm[3].first, cm[3].second); //source action name
+      std::string sName = replaceAmpersand(std::string(cm[3].first, cm[3].second)); //source action name
       std::string dId(cm[4].first, cm[4].second);  //destionation devId
       std::string dES(cm[5].first, cm[5].second);  //destination event/state
-      std::string dName(cm[6].first, cm[6].second); //destination action name
+      std::string dName = replaceAmpersand(std::string(cm[6].first, cm[6].second)); //destination action name
       int sDevId = atoi(sId.c_str());
       int dDevId = atoi(dId.c_str());
       config newConfig;
@@ -114,7 +114,7 @@ int processCommand (std::string cmd, std::string &nextSendMsg, tcp::socket& sock
     if (boost::regex_match(cmd.c_str(), cm, re)) {
       std::string sId (cm[1].first, cm[1].second);
       std::string sES (cm[2].first, cm[2].second);
-      std::string sName (cm[3].first, cm[3].second);
+      std::string sName = replaceAmpersand(std::string(cm[3].first, cm[3].second));
       int sDevId = atoi(sId.c_str());
       bool SorE = (sES == "S") ? true : false;
       vLock.lock();
@@ -143,7 +143,7 @@ int processCommand (std::string cmd, std::string &nextSendMsg, tcp::socket& sock
       std::string es2 = (c.effect_state_change) ? "S" : "E";
       std::string ename (c.cause_name);
       std::string ename2 (c.effect_name);
-      ss << c.cause_device_id << "_" << es << "_" << ename << "_" << c.effect_device_id << "_" << es2 << "_" << ename2;
+      ss << c.cause_device_id << "_" << es << "_" << replaceUnderscore(ename) << "_" << c.effect_device_id << "_" << es2 << "_" << replaceUnderscore(ename2);
       ss << "," ;
     }
     vLock.unlock();
@@ -351,7 +351,7 @@ void initDevices() {
   if (PROGRAM_DEFAULT_CONFIG) {
      stringstream ss;
      string dummyString;
-     ss<<"SET_MAP_"<<kinectDevId<<"_E_"<<"LEFTCIRCLE_"<<irBlasterDevId<<"_E_"<<"HECDvD50:KEY_PLAY";
+     ss<<"SET_MAP_"<<kinectDevId<<"_E_"<<"LEFTCIRCLE_"<<irBlasterDevId<<"_E_"<<"HECDvD50:KEY&PLAY";
      processCommand (ss.str(), dummyString, NULL);
      ss.clear();
      ss<<"SET_MAP_"<<zigBeeDevId<<"_E_"<<"SWITCHON_"<<zWaveDevId<<"_E_"<<"TURNON";
@@ -739,19 +739,35 @@ std::string addNewRemote (const std::string &remName, tcp::socket& socket) {
   return fail;
 }
 
+string replaceUnderscores(std::string str) {
+  for(int i = 0; i < str.length(); ++i) {
+    if(str[i] == '_') {
+      str[i] = '&';
+    }
+  }
+  return str;
+}
 
+string replaceAmpersands(std::string str) {
+  for(int i = 0; i < str.length(); ++i) {
+    if(str[i] == '&') {
+      str[i] = '_';
+    }
+  }
+  return str;
+}
 
 std::string Device::getDeviceInfo () {
   std::stringstream ss;
   ss << name << "_" ;
   for (const struct event &e : eventPubList)
-    ss << "EP_" << e.name << "_";
+    ss << "EP_" << replaceUnderscores(e.name) << "_";
   for (const struct state &s : statePubList)
-    ss << "SP_" << s.name << "_";
+    ss << "SP_" << replaceUnderscores(s.name) << "_";
   for (const struct event &e : eventSubList)
-    ss << "ES_" << e.name << "_";
+    ss << "ES_" << replaceUnderscores(e.name) << "_";
   for (const struct state &s : stateSubList)
-    ss << "SS_" << s.name << "_";
+    ss << "SS_" << replaceUnderscores(s.name) << "_";
   return ss.str();
 }
 
