@@ -213,7 +213,7 @@ public class TriggersPage implements IsWidget {
             public void onSelection(SelectionEvent<Device> deviceSelectionEvent) {
                 if (inputDevice.getText() != null && inputDevice.getText().length() > 0) {
                     inputSignal.getStore().clear();
-                    for(Signal signal : SignalsData.get().getSignals()) {
+                    for(Signal signal : ServerData.data.signals) {
                     //for (int i = 0; i < SignalsData.get().getSignals().size(); i++) {
                         if (inputDevice.getCurrentValue().getDeviceID() == signal.getOwner().getDeviceID()) {
 //                                && TestData.SIGNALS[i].getType().equals(SignalType.INPUT_MSG)) {
@@ -245,7 +245,7 @@ public class TriggersPage implements IsWidget {
             public void onSelection(SelectionEvent<Device> deviceSelectionEvent) {
                 if (outputDevice.getText() != null && outputDevice.getText().length() > 0) {
                     outputSignalStore.clear();
-                    for(Signal signal : SignalsData.get().getSignals()) {
+                    for(Signal signal : ServerData.data.signals) {
                         if (outputDevice.getCurrentValue().getDeviceID() == signal.getOwner().getDeviceID()) {
                             outputSignal.getStore().add(signal);
                         }
