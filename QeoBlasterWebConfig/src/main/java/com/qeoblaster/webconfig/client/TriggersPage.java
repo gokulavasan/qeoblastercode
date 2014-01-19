@@ -7,6 +7,7 @@ import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiFactory;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Widget;
 import com.sencha.gxt.cell.core.client.form.ComboBoxCell;
@@ -153,7 +154,24 @@ public class TriggersPage implements IsWidget {
                 if (list != null && list.size() > 0) {
                     for (int i = 0; i < list.size(); i++) {
                         grid.getStore().remove(list.get(i));
-                        //TODO: add code to remove data from storage as well
+                        WebConfigService.App.getInstance().RemoveTrigger(list.get(i), new AsyncCallback<Boolean>() {
+                            @Override
+                            public void onFailure(Throwable throwable) {
+                                AlertMessageBox alertBox = new AlertMessageBox("Alert", "Failed to remove Trigger");
+                                alertBox.show();
+                            }
+
+                            @Override
+                            public void onSuccess(Boolean aBoolean) {
+                                if(aBoolean) {
+                                    AlertMessageBox alertBox = new AlertMessageBox("Alert", "Removed Trigger");
+                                    alertBox.show();
+                                } else {
+                                    AlertMessageBox alertBox = new AlertMessageBox("Alert", "Failed to remove Trigger");
+                                    alertBox.show();
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -288,6 +306,24 @@ public class TriggersPage implements IsWidget {
                 && outputSignal.getText() != null && outputSignal.getText().length() > 0) {
             Trigger trigger = new Trigger(new Date().getTime(), inputSignal.getCurrentValue(), outputSignal.getCurrentValue());
             grid.getStore().add(trigger);
+            WebConfigService.App.getInstance().AddTrigger(trigger, new AsyncCallback<Boolean>() {
+                @Override
+                public void onFailure(Throwable throwable) {
+                    AlertMessageBox alertBox = new AlertMessageBox("Alert", "Failed to add new Trigger");
+                    alertBox.show();
+                }
+
+                @Override
+                public void onSuccess(Boolean aBoolean) {
+                    if(aBoolean) {
+                        AlertMessageBox alertBox = new AlertMessageBox("Alert", "Added New Trigger");
+                        alertBox.show();
+                    } else {
+                        AlertMessageBox alertBox = new AlertMessageBox("Alert", "Failed to add new Trigger");
+                        alertBox.show();
+                    }
+                }
+            });
             return true;
 
         }

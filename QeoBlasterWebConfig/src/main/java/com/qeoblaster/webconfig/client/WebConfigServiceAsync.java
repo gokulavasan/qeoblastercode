@@ -18,4 +18,8 @@ public interface WebConfigServiceAsync {
      * Use WebConfigService.App.getInstance() to access static instance of WebConfigServiceAsync
      */
     void getServerData(AsyncCallback<ServerData> async);
+
+    void AddTrigger(Trigger trigger, AsyncCallback<Boolean> async);
+
+    void RemoveTrigger(Trigger trigger, AsyncCallback<Boolean> async);
 }

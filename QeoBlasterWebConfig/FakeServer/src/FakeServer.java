@@ -48,9 +48,9 @@ public class FakeServer {
                             out.println(r);
                         }
                     } else if(cmd.startsWith("SET_MAP_")) {
-
+                        out.println("CONFIGADDED");
                     } else if(cmd.startsWith("SET_UNMAP_")) {
-
+                        out.println("UNMAPSUCCESS");
                     } else if(cmd.equals("GET_ALL_MAP")) {
                         StringBuilder r = new StringBuilder();
                         r.append("3_E_LEFTCIRCLE_0_E_HECDvD50:KEY&PLAY");

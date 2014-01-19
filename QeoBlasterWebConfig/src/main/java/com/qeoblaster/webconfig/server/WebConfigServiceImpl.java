@@ -70,4 +70,83 @@ public class WebConfigServiceImpl extends RemoteServiceServlet implements WebCon
         }
         return serverData;
     }
+
+    @Override
+    public boolean AddTrigger(Trigger trigger) {
+        String hostName = "127.0.0.1";
+        int portNumber = 8113;
+        try {
+            Socket socket = new Socket(hostName, portNumber);
+            System.out.println("Connected To Socket Server");
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String line = in.readLine();
+            System.out.println("read line: " + line);
+            out.println("JavaReady");
+
+            RegExp replaceAmp = RegExp.compile("_");
+            String inputSignalName = replaceAmp.replace(trigger.getInputSignalName(), "&");
+            String outputSignalName = replaceAmp.replace(trigger.getOutputSignalName(), "&");
+
+            StringBuilder str = new StringBuilder("SET_MAP_");
+            str.append(trigger.getInputSignal().getOwner().getDeviceID());
+            str.append("_E_");
+            str.append(inputSignalName);
+            str.append("_");
+            str.append(trigger.getOutputSignal().getOwner().getDeviceID());
+            str.append("_E_");
+            str.append(outputSignalName);
+
+            out.println(str.toString());
+            String resp = in.readLine();
+            if(!"CONFIGADDED".equals(resp)) {
+                out.println("END_CONVERSATION");
+                return false;
+            }
+            out.println("END_CONVERSATION");
+            return true;
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean RemoveTrigger(Trigger trigger) {
+        String hostName = "127.0.0.1";
+        int portNumber = 8113;
+        try {
+            Socket socket = new Socket(hostName, portNumber);
+            System.out.println("Connected To Socket Server");
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String line = in.readLine();
+            System.out.println("read line: " + line);
+            out.println("JavaReady");
+
+            RegExp replaceAmp = RegExp.compile("_");
+            String inputSignalName = replaceAmp.replace(trigger.getInputSignalName(), "&");
+
+            StringBuilder str = new StringBuilder("SET_UNMAP_");
+            str.append(trigger.getInputSignal().getOwner().getDeviceID());
+            str.append("_E_");
+            str.append(inputSignalName);
+
+            out.println(str.toString());
+            String resp = in.readLine();
+            if(!"UNMAPSUCCESS".equals(resp)) {
+                out.println("END_CONVERSATION");
+                return false;
+            }
+            out.println("END_CONVERSATION");
+            return true;
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
