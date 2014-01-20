@@ -65,8 +65,10 @@ public class WebConfigServiceImpl extends RemoteServiceServlet implements WebCon
             SplitResult trigs = reg.split(triggers);
             for(int i = 0; i < trigs.length(); i++) {
                 String trigger = trigs.get(i);
-                System.out.println("Parsing trigger: " + trigger);
-                serverData.triggers.add(new Trigger(trigger, serverData.devices));
+                if(trigger.length() > 0) {
+                    System.out.println("Parsing trigger: " + trigger);
+                    serverData.triggers.add(new Trigger(trigger, serverData.devices));
+                }
             }
             out.println("END_CONVERSATION");
         } catch (UnknownHostException e) {
