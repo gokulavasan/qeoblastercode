@@ -74,4 +74,14 @@ public class WebConfigServiceTestImpl extends RemoteServiceServlet implements We
         ret.triggers = Arrays.asList(TRIGGERS);
         return ret;
     }
+
+    @Override
+    public boolean AddTrigger(Trigger trigger) {
+        return false;
+    }
+
+    @Override
+    public boolean RemoveTrigger(Trigger trigger) {
+        return false;
+    }
 }

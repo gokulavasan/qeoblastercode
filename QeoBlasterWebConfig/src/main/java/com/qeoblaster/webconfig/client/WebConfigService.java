@@ -16,6 +16,8 @@ public interface WebConfigService extends RemoteService {
      * Use WebConfigService.App.getInstance() to access static instance of WebConfigServiceAsync
      */
     ServerData getServerData();
+    boolean AddTrigger(Trigger trigger);
+    boolean RemoveTrigger(Trigger trigger);
 
     public static class App {
         private static final WebConfigServiceAsync ourInstance = (WebConfigServiceAsync) GWT.create(WebConfigService.class);
