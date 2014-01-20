@@ -6,19 +6,28 @@
 
     <ui:with field="resources" type="com.qeoblaster.webconfig.client.WebConfigResources"/>
 
-    <container:VerticalLayoutContainer width="100%" height="100%">
-        <toolbar:ToolBar>
-            <button:TextButton ui:field="btnAddTrigger" text="Add Trigger" minWidth="130" iconAlign="LEFT"
-                               icon="{resources.plus24}"/>
-            <button:TextButton ui:field="btnRemoveTrigger" text="Remove Trigger" minWidth="130" iconAlign="LEFT"
-                               icon="{resources.cross24}"/>
-        </toolbar:ToolBar>
-    <container:HorizontalLayoutContainer width="100%" height="100%">
-        <container:child>
-            <container:VerticalLayoutContainer ui:field="gridPanel">
+    <ui:style>
 
-            </container:VerticalLayoutContainer>
-        </container:child>
-    </container:HorizontalLayoutContainer>
+        .gridPanel {
+            padding: 5;
+            width: 100%;
+            height: 100%;
+        }
+    </ui:style>
+
+    <container:VerticalLayoutContainer width="100%" height="100%" styleName="contentArea">
+        <toolbar:ToolBar styleName="toolbar">
+            <button:TextButton ui:field="btnAddTrigger" text="Add Trigger" minWidth="130" iconAlign="LEFT"
+                               icon="{resources.plus24}" styleName="toolbarButton"/>
+            <button:TextButton ui:field="btnRemoveTrigger" text="Remove Trigger" minWidth="130" iconAlign="LEFT"
+                               icon="{resources.cross24}" styleName="toolbarButton"/>
+        </toolbar:ToolBar>
+        <container:HorizontalLayoutContainer width="100%" height="100%" >
+            <container:child>
+                <container:VerticalLayoutContainer ui:field="gridPanel" styleName="{style.gridPanel}">
+
+                </container:VerticalLayoutContainer>
+            </container:child>
+        </container:HorizontalLayoutContainer>
     </container:VerticalLayoutContainer>
 </ui:UiBinder>

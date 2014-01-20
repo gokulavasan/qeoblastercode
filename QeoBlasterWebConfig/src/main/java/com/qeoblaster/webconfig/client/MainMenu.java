@@ -49,7 +49,8 @@ public class MainMenu implements IsWidget {
             @Override
             public void onValueChange(ValueChangeEvent<Boolean> booleanValueChangeEvent) {
                 if (booleanValueChangeEvent.getValue() == true) {
-                    cp.setHeadingText("Devices");
+//                    cp.setHeadingText("Devices");
+                    cp.setHeadingHtml("<div style=\"font-size: 18px; font-weight: bold\"> Devices</div>");
                     container.setWidget(DevicesPage.get());
                 }
             }
@@ -58,7 +59,8 @@ public class MainMenu implements IsWidget {
             @Override
             public void onValueChange(ValueChangeEvent<Boolean> booleanValueChangeEvent) {
                 if (booleanValueChangeEvent.getValue() == true) {
-                    cp.setHeadingText("Triggers");
+//                    cp.setHeadingText("Triggers");
+                    cp.setHeadingHtml("<div style=\"font-size: 18px; font-weight: bold\"> Triggers</div>");
                     container.setWidget(TriggersPage.get());
                 }
             }
@@ -67,13 +69,14 @@ public class MainMenu implements IsWidget {
             @Override
             public void onValueChange(ValueChangeEvent<Boolean> booleanValueChangeEvent) {
                 if (booleanValueChangeEvent.getValue() == true) {
-                    cp.setHeadingText("Settings");
+//                    cp.setHeadingText("Settings");
+                    cp.setHeadingHtml("<div style=\"font-size: 18px; font-weight: bold;\"> Settings</div>");
                     container.setWidget(SettingsPage.get());
                 }
             }
         });
         devicesButton.setValue(true);
-        cp.setHeadingText("Devices");
+        cp.setHeadingHtml("<div style=\"height 30px; font-size: 18px; font-weight: bold\"> Devices</div>");
         container.setWidget(DevicesPage.get());
     }
 

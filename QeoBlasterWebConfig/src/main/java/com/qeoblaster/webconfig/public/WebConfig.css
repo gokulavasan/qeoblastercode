@@ -5,3 +5,49 @@ body {
     font-size: small;
     margin: 8px;
 }
+
+.listTitle{
+    font-weight: bold !important;
+    padding: 5px !important;
+    font-size: large;
+    background-color: #006D4F;
+}
+
+.toolbar {
+    background-color: #35D3A7;
+}
+
+.toolbarButton {
+    /*padding: 5px !important;*/
+    padding-right: 10px !important;
+    display: inline-block;
+    /*padding: 1.3em 3em;*/
+    /*background: #F2762E;*/
+    /*border-radius: 10px;*/
+    -moz-transition: opacity 0.25s ease-in-out;
+    -webkit-transition: opacity 0.25s ease-in-out;
+    -o-transition: opacity 0.25s ease-in-out;
+    -ms-transition: opacity 0.25s ease-in-out;
+    transition: opacity 0.25s ease-in-out;
+    letter-spacing: 0.20em;
+    text-decoration: none;
+    text-transform: uppercase;
+    /*font-weight: 300;*/
+}
+
+.gridPanel {
+    padding: 5px !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.contentArea {
+    background-color: #00A779;
+}
+
+.tableArea {
+    background-color: white !important;
+    padding: 5px !important;
+    border: 0px !important;
+
+}

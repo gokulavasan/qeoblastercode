@@ -6,22 +6,30 @@
 
     <ui:with field="resources" type="com.qeoblaster.webconfig.client.WebConfigResources"/>
 
-    <container:VerticalLayoutContainer width="100%" height="100%">
-        <toolbar:ToolBar>
+    <ui:style>
+
+        .gridPanel {
+            padding: 5;
+            width: 100%;
+            height: 100%;
+        }
+    </ui:style>
+
+    <container:VerticalLayoutContainer width="100%" height="100%" styleName="contentArea">
+        <toolbar:ToolBar styleName="toolbar">
             <button:TextButton ui:field="btnAddDevice" text="Add Device" minWidth="130" iconAlign="LEFT"
-                               icon="{resources.plus24}"/>
+                               icon="{resources.plus24}"  styleName="toolbarButton"/>
             <button:TextButton ui:field="btnRemoveDevice" text="Remove Device" minWidth="130" iconAlign="LEFT"
-                               icon="{resources.cross24}"/>
+                               icon="{resources.cross24}" styleName="toolbarButton"/>
         </toolbar:ToolBar>
         <container:HorizontalLayoutContainer width="100%" height="100%">
             <container:child>
-                <container:VerticalLayoutContainer width="40%" ui:field="registeredDeviceListView">
+                <container:VerticalLayoutContainer width="40%" ui:field="registeredDeviceListView" styleName="{style.gridPanel}">
 
                 </container:VerticalLayoutContainer>
             </container:child>
             <container:child>
-                <container:VerticalLayoutContainer width="60%" ui:field="deviceDetail">
-
+                <container:VerticalLayoutContainer width="60%" ui:field="deviceDetail" styleName="{style.gridPanel}">
                 </container:VerticalLayoutContainer>
             </container:child>
         </container:HorizontalLayoutContainer>

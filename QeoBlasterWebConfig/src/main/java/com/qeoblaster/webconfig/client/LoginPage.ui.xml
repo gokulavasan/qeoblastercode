@@ -10,9 +10,9 @@
         <ui:attributes width="1" height="-1"/>
     </ui:with>
 
-    <g:VerticalPanel>
-        <c:FramedPanel headingText="QeoBlaster Web Config Login" width="350">
-            <container:VerticalLayoutContainer>
+    <g:VerticalPanel styleName="contentArea">
+        <c:FramedPanel headingText="QeoBlaster Web Config Login" width="350" >
+            <container:VerticalLayoutContainer >
                 <container:child layoutData="{verticalLayoutData}">
                     <form:FieldLabel text="User Name">
                         <form:widget>

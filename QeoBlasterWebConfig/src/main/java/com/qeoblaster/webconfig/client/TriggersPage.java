@@ -8,6 +8,7 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiFactory;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.Widget;
 import com.sencha.gxt.cell.core.client.form.ComboBoxCell;
 import com.sencha.gxt.core.client.Style;
@@ -116,10 +117,10 @@ public class TriggersPage implements IsWidget {
 
         TriggerProperties props = GWT.create(TriggerProperties.class);
 
-        ColumnConfig<Trigger, String> inputCmdName = new ColumnConfig<Trigger, String>(props.inputSignalName(), 150, "Input Command");
-        ColumnConfig<Trigger, String> inputCmdValue = new ColumnConfig<Trigger, String>(props.inputSignalValue(), 150, "Input Value");
-        ColumnConfig<Trigger, String> outputCmdName = new ColumnConfig<Trigger, String>(props.outputSignalName(), 150, "Output Command");
-        ColumnConfig<Trigger, String> outputCmdValue = new ColumnConfig<Trigger, String>(props.outputSignalValue(), 150, "Output Value");
+        ColumnConfig<Trigger, String> inputCmdName = new ColumnConfig<Trigger, String>(props.inputSignalName(), 130, "Input Command");
+        ColumnConfig<Trigger, String> inputCmdValue = new ColumnConfig<Trigger, String>(props.inputSignalValue(), 130, "Input Value");
+        ColumnConfig<Trigger, String> outputCmdName = new ColumnConfig<Trigger, String>(props.outputSignalName(), 130, "Output Command");
+        ColumnConfig<Trigger, String> outputCmdValue = new ColumnConfig<Trigger, String>(props.outputSignalValue(), 130, "Output Value");
 
         List<ColumnConfig<Trigger, ?>> l = new ArrayList<ColumnConfig<Trigger, ?>>();
         l.add(inputCmdName);
@@ -142,7 +143,10 @@ public class TriggersPage implements IsWidget {
         grid.setColumnReordering(true);
         grid.setStateful(false);
 
-
+        Label lblRegistered = new Label();
+        lblRegistered.setText("Registered Triggers:");
+        lblRegistered.addStyleName("listTitle");
+        gridPanel.add(lblRegistered);
         gridPanel.add(grid);
 
 
@@ -173,8 +177,8 @@ public class TriggersPage implements IsWidget {
         final Dialog complex = new Dialog();
         complex.setBodyBorder(false);
         complex.setHeadingText("Add new Trigger...");
-        complex.setWidth(400);
-        complex.setHeight(225);
+        complex.setWidth(500);
+        complex.setHeight(250);
         //TODO: need to make this dialog blocking all other interactions
 
         VerticalLayoutContainer p = new VerticalLayoutContainer();

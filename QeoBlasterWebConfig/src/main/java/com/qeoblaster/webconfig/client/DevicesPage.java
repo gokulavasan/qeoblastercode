@@ -1,6 +1,7 @@
 package com.qeoblaster.webconfig.client;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.uibinder.client.UiBinder;
@@ -30,7 +31,6 @@ import com.sencha.gxt.widget.core.client.info.Info;
 import com.sencha.gxt.widget.core.client.toolbar.ToolBar;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -52,6 +52,8 @@ public class DevicesPage implements IsWidget {
     private TextField newIRSignalName;
     private TextField newIRSignalValue;
     private ComboBox<SignalTypeModel> cmbSignalType;
+    private VerticalLayoutContainer c1;
+    private Label lblDeviceInfo;
 
     @Override
     public Widget asWidget() {
@@ -85,6 +87,7 @@ public class DevicesPage implements IsWidget {
         if (instance == null) {
             instance = new DevicesPage();
         }
+        instance.clearDeviceDetail();
         return instance;
     }
 
@@ -184,7 +187,7 @@ public class DevicesPage implements IsWidget {
         if (newDeviceName.getText() != null && newDeviceName.getText().length() > 0
                 && cmbDeviceType.getText() != null && cmbDeviceType.getText().length() > 0) {
             Device newDevice = new Device();
-            newDevice.setDeviceID((long)(Math.random() * Long.MAX_VALUE));
+            newDevice.setDeviceID((long) (Math.random() * Long.MAX_VALUE));
             newDevice.setDeviceName(newDeviceName.getText());
             newDevice.setType(DeviceType.valueOf(cmbDeviceType.getText()));
 
@@ -204,6 +207,7 @@ public class DevicesPage implements IsWidget {
     private void showRegisteredDevices() {
         Label lblRegistered = new Label();
         lblRegistered.setText("Registered Devices:");
+        lblRegistered.addStyleName("listTitle");
         registeredDeviceListView.add(lblRegistered);
 
         final DeviceProperties props = GWT.create(DeviceProperties.class);
@@ -222,6 +226,7 @@ public class DevicesPage implements IsWidget {
         registeredDevices.getStore().addAll(ServerData.data.devices);
         registeredDevices.setBorders(false);
         registeredDeviceListView.add(registeredDevices);
+        registeredDevices.setStyleName("tableArea");
     }
 
 
@@ -246,11 +251,23 @@ public class DevicesPage implements IsWidget {
         if (lblSignals == null) lblSignals = new Label();
         lblSignals.setText("Supported Signals: ");
 
+        if (c1 == null) c1 = new VerticalLayoutContainer();
 
-        deviceDetail.add(lblDeviceID);
-        deviceDetail.add(lblDeviceName);
-        deviceDetail.add(lblDeviceType);
-        deviceDetail.add(lblSignals);
+        c1.setStyleName("gridPanel");
+
+        c1.add(lblDeviceID);
+        c1.add(lblDeviceName);
+        c1.add(lblDeviceType);
+        c1.add(lblSignals);
+        c1.setBorders(true);
+
+        if (lblDeviceInfo == null) lblDeviceInfo = new Label();
+        lblDeviceInfo.setText("Device Info:");
+        lblDeviceInfo.addStyleName("listTitle");
+        deviceDetail.add(lblDeviceInfo);
+        deviceDetail.add(c1);
+        deviceDetail.setStyleName("gridPanel");
+        c1.setStyleName("tableArea");
 
 
         //show signal grid
@@ -285,11 +302,15 @@ public class DevicesPage implements IsWidget {
         signalTable.setBorders(false);
         signalTable.setColumnReordering(true);
         signalTable.setStateful(false);
+        signalTable.setStyleName("tableArea");
+        signalTable.setBorders(true);
 
         if (device.getType().equals(DeviceType.IR)) {
             irToolbar = new ToolBar();
+            irToolbar.setStyleName("toolbar");
             TextButton btnAddIRSignal = new TextButton();
             btnAddIRSignal.setText("Add IR CMD");
+            btnAddIRSignal.setStyleName("toolbarButton");
             btnAddIRSignal.addSelectHandler(new SelectEvent.SelectHandler() {
                 @Override
                 public void onSelect(SelectEvent selectEvent) {
@@ -300,6 +321,7 @@ public class DevicesPage implements IsWidget {
 
             TextButton btnRemoveIRSignal = new TextButton();
             btnRemoveIRSignal.setText("Remove IR CMD");
+            btnRemoveIRSignal.setStyleName("toolbarButton");
             btnRemoveIRSignal.addSelectHandler(new SelectEvent.SelectHandler() {
 
                 @Override
@@ -319,7 +341,6 @@ public class DevicesPage implements IsWidget {
 
             deviceDetail.add(irToolbar);
         }
-
         deviceDetail.add(signalTable, new VerticalLayoutContainer.VerticalLayoutData(1, 1));
 
 
@@ -451,6 +472,14 @@ public class DevicesPage implements IsWidget {
 
         if (signalTable != null) {
             signalTable.removeFromParent();
+        }
+
+        if (c1 != null) {
+            c1.removeFromParent();
+        }
+
+        if (lblDeviceInfo != null) {
+            lblDeviceInfo.removeFromParent();
         }
     }
 
