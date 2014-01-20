@@ -135,7 +135,7 @@ public class WebConfigServiceImpl extends RemoteServiceServlet implements WebCon
             System.out.println("read line: " + line);
             out.println("JavaReady");
             line = in.readLine();
-            out.println("read line: " + line);
+            System.out.println("read line: " + line);
             RegExp replaceAmp = RegExp.compile("_");
             String inputSignalName = replaceAmp.replace(trigger.getInputSignalName(), "&");
 
