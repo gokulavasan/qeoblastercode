@@ -36,7 +36,9 @@ public class WebConfigServiceImpl extends RemoteServiceServlet implements WebCon
             System.out.println("read line: " + line);
             out.println("JavaReady");
             out.println("GET_NUM_DEVICES");
-            int numDevices = Integer.valueOf(in.readLine());
+            String resp = in.readLine();
+            System.out.println("got response: " + resp);
+            int numDevices = Integer.valueOf(resp);
             System.out.println("Client got " + numDevices + " number of devices");
             out.println("GET_DEVICE_IDS");
             String deviceIds = in.readLine();
