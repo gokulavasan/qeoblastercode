@@ -22,3 +22,7 @@ QeoBlasterWebConfig/.idea
 QeoBlasterWebConfig/classes
 QeoBlasterWebConfig/*.iml
 ipch
+
+.DS_Store
+
+*.iml
